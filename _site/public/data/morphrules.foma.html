@@ -1,0 +1,892 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" href="../css/styles/default.css">
+<script src="../css/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+</head>
+<body>
+
+<pre><code class="regexp">
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                                                                 !
+!                                  R O U Z E T A                                  ! 
+!                              한국어 형태소 분석기                               !
+!                                                                                 !
+!         한국어 형태소 조합 규칙들을 Finite-State Transducer 형태로 구현         !
+!                                                                                 !
+!                                                                 이 상호         !
+!                                                                                 !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!!!!!!!!!!!!!!!!!!!!!!
+! 한국어 품사 셋 정의 !
+!!!!!!!!!!!!!!!!!!!!!!!
+
+define AdverbSet   [ %/ac | %/ad | %/ai | %/am ] ;
+define AdnounSet   [ %/di | %/dm | %/dn | %/du ] ;
+define EndingSet   [ %/ec | %/ed | %/ef | %/en | %/ep | %/ex ] ;
+define InterSet    [ %/it ] ;
+define NounSet     [ %/na | %/nc | %/nd | %/ni | %/nm | %/nn | %/np | %/nr | %/ns | %/nu ] ;
+define ParticleSet [ %/pa | %/pc | %/pd | %/po | %/pp | %/ps | %/pt | %/pv | %/px | %/pq | %/pm ] ;
+define VerbSet     [ %/vb | %/vi | %/vj | %/vx | %/vn ] ;
+define AuxSet      [ %/xa | %/xj | %/xn | %/xv ] ;
+define EtcSet      [ %/sc | %/se | %/sf | %/sl | %/sr | %/sd | %/su | %/sy | %/so ] ;
+define EHSet       [ %/nb | %/nh | %/ne | %/un ] ; ! Digit, Chinese, English, Unknown
+define IrrSet      [ %/irrL | %/irrb | %/irrd | %/irrh | %/irrl | %/irrs | %/irru ] ;
+
+! Noun String Set
+define NounStringSet [ NounSet | %/xn ] ;
+! Verb String Set
+define VerbStringSet [ VerbSet | %/xj | %/xv ] ;
+
+! Tag Set
+define TagSet        [ AdverbSet | AdnounSet | EndingSet | InterSet |
+                      NounSet | ParticleSet | VerbSet | AuxSet ] ;
+
+! Tag Set + Irr Tags
+define TagAndIrrSet [ TagSet | IrrSet | EtcSet | EHSet ] ;
+
+! Remove Tags
+define RemoveTags  TagAndIrrSet -> 0 ;
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+! 한글 초성 
+define Onset [ㄱ | ㄴ | ㄷ | ㄹ | ㅁ | ㅂ | ㅅ | ㅇ | ㅈ |
+              ㅊ | ㅋ | ㅌ | ㅍ | ㅎ | ㄲ | ㄸ | ㅃ | ㅆ | ㅉ] ;
+
+! 한글 중성
+define Peak [ㅏ | ㅐ | ㅑ | ㅒ | ㅓ | ㅔ | ㅕ | ㅖ | ㅗ | ㅘ |
+             ㅙ | ㅚ | ㅛ | ㅜ | ㅝ | ㅞ | ㅟ | ㅠ | ㅡ | ㅢ | ㅣ ] ;
+
+! 한글 종성
+define FILLC   %_%_   ; ! No-coda
+define Coda [FILLC  | %_ㄱ | %_ㄴ | %_ㄷ | %_ㄹ | %_ㅁ | %_ㅂ | %_ㅅ   | 
+             %_ㅇ   | %_ㅈ | %_ㅊ | %_ㅋ | %_ㅌ | %_ㅍ | %_ㅎ | %_ㄱㄱ | 
+             %_ㄱㅅ | %_ㄴㅈ | %_ㄴㅎ | %_ㄹㄱ | %_ㄹㅁ | %_ㄹㅂ | 
+             %_ㄹㅅ | %_ㄹㅌ | %_ㄹㅍ | %_ㄹㅎ | %_ㅂㅅ | %_ㅅㅅ ] ;
+
+define Syllable   [Onset Peak Coda] ;
+
+! ㄴ/nc ㄷ/nc.. 문장에서 단순히 자모가 단어로 활용되었을 때의 자음/모음
+define KorCha  [ %_ㄱ%_ | %_ㄴ%_ | %_ㄷ%_ | %_ㄹ%_ | %_ㅁ%_ | %_ㅂ%_ | %_ㅅ%_ 
+               | %_ㅇ%_ | %_ㅈ%_ | %_ㅊ%_ | %_ㅋ%_ | %_ㅌ%_ | %_ㅍ%_ | %_ㅎ%_ 
+               | %_ㄲ%_ | %_ㄸ%_ | %_ㅃ%_ | %_ㅆ%_ | %_ㅉ%_ ] ;
+
+define KorMo   [ %_ㅏ%_ | %_ㅐ%_ | %_ㅑ%_ | %_ㅒ%_ | %_ㅓ%_ | %_ㅔ%_ | %_ㅕ%_ 
+               | %_ㅖ%_ | %_ㅗ%_ | %_ㅘ%_ | %_ㅙ%_ | %_ㅚ%_ | %_ㅛ%_ | %_ㅜ%_ 
+               | %_ㅝ%_ | %_ㅞ%_ | %_ㅟ%_ | %_ㅠ%_ | %_ㅡ%_ | %_ㅢ%_ | %_ㅣ%_ ] ;
+
+define KorChar [ KorCha | KorMo ] ;
+define CodaOnly [ %_ㄴ | %_ㄹ | %_ㅁ | %_ㅂ | %_ㅅ | %_ㅇ ] ;
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                   !
+! 기본 유종성/무종성 체언 결합 법칙 !
+!                                   !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+! 은/는
+! Filter0 : 사과는
+define FilterPT0 ~$[ FILLC NounStringSet ㅇ ㅡ %_ㄴ %/pt ] ;
+
+! Filter1 : 사람은
+define FilterPT1 ~$[ [Coda - FILLC] NounStringSet ㄴ ㅡ %_ㄴ %/pt ] ;
+
+! 이/가
+! FilterPS0 : 사과가
+define FilterPS0 ~$[ FILLC NounStringSet ㅇ ㅣ FILLC %/ps ] ;
+
+! FilterPS1 : 사람이
+define FilterPS1 ~$[ [Coda - FILLC] NounStringSet ㄱ ㅏ FILLC %/ps ] ;
+
+! ㄹ/을/를
+! FilterPO0 : 사과를, 사괄 
+define FilterPO0 ~$[ FILLC NounStringSet ㅇ ㅡ %_ㄹ %/po ] ;
+
+! FilterPO1 : 결론을 
+define FilterPO1 ~$[ [Coda - FILLC] NounStringSet (ㄹ ㅡ) %_ㄹ %/po ] ;
+
+! 사람/아, 사람/이여, 사과/야, 사과/여
+! FilterPV0 : 사과야, 사과여
+define FilterPV0 ~$[ FILLC NounStringSet [ㅇ ㅏ FILLC | [ㅇ ㅣ FILLC ㅇ [ㅑ | ㅕ] FILLC ]] %/pv ] ;
+
+! FilterPV1 : 사람아, 사람이여, 사람이야
+define FilterPV1 ~$[ [Coda - FILLC] NounStringSet ㅇ [ㅑ | ㅕ] FILLC %/pv ] ;
+
+! 로/pa, 로서/pa, 로써/pa / 으로/pa 으로서/pa 으로써/pa
+! FilterPA0 : 사과로, 사과로서, 사과로써
+define FilterPA0 ~$[ [FILLC | %_ㄹ] NounStringSet ㅇ ㅡ FILLC ㄹ ㅗ FILLC Syllable* %/pa ] ;
+
+! FilterPA1 : 사람으로, 사람으로서, 사람으로써
+define FilterPA1 ~$[ [Coda - FILLC - %_ㄹ] NounStringSet ㄹ ㅗ FILLC Syllable* %/pa ] ;
+
+! 사과와/사람과 : 와/pc 과/pc
+! FilterPC0 : 사과와
+define FilterPC0 ~$[ FILLC NounStringSet ㄱ ㅘ FILLC %/pc ] ;
+
+! FilterPC1 : 사람과
+define FilterPC1 ~$[ [Coda - FILLC] NounStringSet ㅇ ㅘ FILLC %/pc ] ;
+
+! 사과나/사람이나 : 나/pc 이나/pc
+! FilterPC2 : 사과나
+define FilterPC2 ~$[ FILLC NounStringSet ㅇ ㅣ FILLC ㄴ ㅏ FILLC %/pc ] ;
+
+! FilterPC3 : 사람이나
+define FilterPC3 ~$[ [Coda - FILLC] NounStringSet ㄴ ㅏ FILLC %/pc ] ;
+
+! 사과나/사람이나
+! FilterPX0 : 사과나, 사과나마
+define FilterPX0 ~$[ FILLC NounStringSet ㅇ ㅣ FILLC ㄴ ㅏ FILLC ( ㅁ ㅏ FILLC ) %/px ] ;
+
+! FilterPX1 : 사람이나, 사람이나마
+define FilterPX1 ~$[ [Coda - FILLC] NounStringSet ㄴ ㅏ FILLC ( ㅁ ㅏ FILLC ) %/px ] ;
+
+! 사과라도, 사과란, 
+! FilterPX2 : 사과라도, 사과란
+define FilterPX2 ~$[ FILLC NounStringSet ㅇ ㅣ FILLC ㄹ ㅏ [ %_ㄴ | FILLC ㄷ ㅗ FILLC ] %/px ] ;
+
+! FilterPX3 : 사람이라도, 사람이란
+define FilterPX3 ~$[ [Coda - FILLC] NounStringSet ㄹ ㅏ [ %_ㄴ | FILLC ㄷ ㅗ FILLC ] %/px ] ;
+
+! 사과야, 사과야말로, 사람이야, 사람이야말로
+! FilterPX4 : 사과야, 사과야말로
+define FilterPX4 ~$[ FILLC NounStringSet ㅇ ㅣ FILLC ㅇ ㅑ FILLC ( ㅁ ㅏ %_ㄹ ㄹ ㅗ FILLC ) %/px ] ;
+
+! FilterPX5 : 사람이야, 사람이야말로
+define FilterPX5 ~$[ [Coda - FILLC] NounStringSet ㅇ ㅑ FILLC ( ㅁ ㅏ %_ㄹ ㄹ ㅗ FILLC ) %/px ] ;
+
+! 사과는요
+! FilterPX6 : 사과는요
+define FilterPX6 ~$[ FILLC NounStringSet ㅇ ㅡ %_ㄴ ㅇ ㅛ FILLC %/px ] ;
+
+! 사람은요
+! FilterPX7 : 사람은요
+define FilterPX7 ~$[ [Coda - FILLC] NounStringSet ㄴ ㅡ %_ㄴ ㅇ ㅛ FILLC %/px ] ;
+
+! 사과든
+! FilterPX8 : 사과든
+define FilterPX8 ~$[ FILLC NounStringSet ㅇ ㅣ FILLC ㄷ ㅡ %_ㄴ %/px ] ;
+
+! 사람이든
+! FilterPX9 : 사람이든
+define FilterPX9 ~$[ [Coda - FILLC] NounStringSet ㄷ ㅡ %_ㄴ %/px ] ;
+
+!
+! 인용격 조사, 라고, 이라고는 대부분 앞에 따옴표가 오는데, 이것을 고려해서 필터링하는 것이 맞음.
+! "울렸다"라고 (따옴표 앞 음절 마지막에 받침이 없으면 '라고'가 붙고,
+! "일"이라고 (따옴표 앞 음절 마지막에 받침이 있으면 '이라고'가 붙는다.
+!
+
+!!!!!!!!!!!!!!!!!!!!!!
+! 체언 + 조사 Filter !
+!!!!!!!!!!!!!!!!!!!!!!
+
+define NounParticleFilter   FilterPT0 .o. FilterPT1 .o. FilterPS0 .o. FilterPS1 .o.
+                            FilterPO0 .o. FilterPO1 .o. FilterPV0 .o. FilterPV1 .o.
+                            FilterPA0 .o. FilterPA1 .o. FilterPC0 .o. FilterPC1 .o.
+                            FilterPC2 .o. FilterPC3 .o. FilterPX0 .o. FilterPX1 .o.
+                            FilterPX2 .o. FilterPX3 .o. FilterPX4 .o. FilterPX5 .o.
+                            FilterPX6 .o. FilterPX7 .o. FilterPX8 .o. FilterPX9 ;
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                                                                 !
+! 용언 + 어미 Filter                                                              !
+!                                                                                 !
+! 1. 형용사일때는 진행형 어미를 붙일 수 없다. "아릅답 + 는"                       !
+! 2. 선어말어미 다음에는 '아'로 시작하는 어미가 오지 않는다. "고마웠+아야지"      !
+!                                                                                 !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+define VerbEndingFilter    ~$[ (IrrSet) %/vj ㄴ ㅡ %_ㄴ ] .o. 
+                           ~$[ %/ep ㅇ ㅏ ] ;
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                                                                 !
+! 모음조화 현상                                                                   !
+!                                                                                 !
+! 한글 맞춤법 16항 : 어간의 끝음절 모음이 'ㅏ, ㅗ'일 때에는 어미를 '-아'로 적고,  !
+!                    그 밖의 모음일 때에는 '-어'로 적는다.                        !
+!                                                                                 !
+! 나아 나아도 나아서 막아 막아도 막아서 얇아 얇아도 돌아 돌아도 돌아서            !
+! 보아 보아도 보아서                                                              !
+!                                                                                 !
+! 개어 개어도 개어서 겪어 겪어도 겪어서 되어 되어도 되어서 베어 베어도 베어서     !
+! 쉬어 쉬어도 쉬어서 저어 저어도 저어서 주어 주어도 주어서 피어 피어도 피어서     !
+! 희어 희어도 희어서                                                              !
+!                                                                                 !
+! * 몰라 : 모르 + 아 : '르' 불규칙일 경우 '르'가 'ㄹㄹ'로 바뀌면서 'ㅡ'가 아닌    !
+!          그 앞의 'ㅗ'에 영향을 받아 뒤 모음이 '아'가 온다.                      !
+!                                                                                 !
+! * 예외 : 가거라 (가+어라), 보거라, 자거라, 나거라, 오너라(오+어라), 오거라      !
+!          먹거라, 놀거라... 구어체에서는 '거라'가 그냥 쓰인다.                   !
+!                                                                                 !
+! * 모음조화를 어긋나게 쓰는 굳어진 말들 (현실적인 발음에 따라 맞춤법을 정함)     !
+!                                                                                 !
+! (1) 아름다워 (○ ) , 아름다와 (× )                                             !
+! (2) 안타까워 (○ ) , 안타까와 (× ) , 가까워, 아까워 ('깝'으로 끝나는 말)       !
+! (3) 고마와   (× ) , 고마워   (○ )                                             !
+! (4) 아리따워 (○ ) , 아리따와 (× )                                             !
+!                                                                                 !
+! '롭'으로 끝나는 말 : 감미로웠다, 괴로웠다. 순조로워, 까다로워, 날카로워,        !
+!                                                                                 !
+! 놀라워, 다채로워, 대수로워, 따가워, 반가워, 번거로워, 사나워, 새로워            !
+! 슬기로워, 아까워, 아름다워, 아리따워, 안타까워, 예사로워, 달가워                !
+! 놀라워, 보드라워, 고마워                                                        !
+!                                                                                 !
+! '답', '깝', '롭', '갑', '납', '랍', '맙', '땁' => '어'가 어미로 온다.           !
+! * 돕 -> 도와                                                                    !
+!                                                                                 !
+! 아파 (o), 아퍼 (x), 아팠다 (o), 아펐다 (x) (아프다)                             !
+! 모아 (o), 모어 (x), 모았다 (o), 모었다 (x) (모으다)                             !
+! 단음절 '으'의 경우는 '어'가 와야 하는데 (쓰 + 어 => 써)                         !
+! 2음절 이상일 경우는 바로 전 음절의 모음에 따라 모음 현상이 온다.                !
+! 아프 + 아/어 => '프' 앞의 음절이 '아' => '으' 탈락 => '아파'                    !
+!                                                                                 !
+! 쓰다[글을] (썼다) , 따르다 (따랐다) , 뜨다 (떴다) , 끄다 (껐다)                 !
+! 담그다 (담갔다) , 기쁘다 (기뻤다) , 바쁘다 (바빴다) , 슬프다 (슬펐다)           !
+! 쓰다[맛이] (썼다)                                                               !
+!                                                                                 !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+! 양성 모음/음성 모음 조화
+define BrightVowel          [ ㅏ | ㅗ ] ;
+define DarkVowel            [ Peak - BrightVowel ] ;
+define DarkSyllable         [ ㅇ ㅓ Coda ] ;
+define BrightSyllable       [ ㅇ ㅏ Coda ] ;
+define BrightVowelHarmony   ~$[ [   [Onset BrightVowel Coda (IrrSet - %/irrl) VerbStringSet DarkSyllable ]
+                               - [[[[ㄷ|ㄲ|ㄱ|ㄴ|ㅁ|ㄸ]ㅏ]|ㄹ[ㅏ|ㅗ]] %_ㅂ %/irrb [%/vb|%/vj] ㅇ ㅓ Coda ]
+                               - [[[ㄱ|ㅈ|ㄴ]ㅏ|[ㅇ|ㅂ] ㅗ] FILLC VerbStringSet ㅇ ㅓ FILLC ] 
+                               - [ ㅎ ㅏ FILLC VerbStringSet ㅇ ㅓ Coda] ]
+                              | [[[[ㄷ|ㄲ|ㄱ|ㄴ|ㅁ|ㄸ]ㅏ]|ㄹ[ㅏ|ㅗ]] %_ㅂ %/irrb [%/vb|%/vj] ㅇ ㅏ Coda ]
+                              | [ ㅎ ㅏ FILLC VerbStringSet ㅇ ㅏ Coda]
+                              | [ Onset BrightVowel FILLC ㄹ ㅡ FILLC %/irrl VerbSet DarkSyllable ] ] ;
+
+define DarkMinusEU          [ [DarkVowel Coda] - [ㅡ FILLC] ] ;
+define DarkVowelHarmony      ~$[   [ Onset DarkMinusEU (IrrSet - %/irrl - %/irrL) VerbStringSet BrightSyllable ] 
+                              | [ Onset DarkVowel FILLC ㄹ ㅡ FILLC %/irrl VerbStringSet BrightSyllable ] 
+                              | [ Onset DarkVowel FILLC ㄹ ㅡ FILLC %/irrL VerbStringSet BrightSyllable ] ] ;
+
+define EUHarmony            ~$[   [ Onset BrightVowel Coda Onset ㅡ FILLC VerbStringSet DarkSyllable ]   
+                              | [ Onset DarkVowel Coda Onset ㅡ FILLC VerbStringSet BrightSyllable ] ] ;
+
+define SingleEUSyllable        [VerbStringSet -> ... %]SINGLEEU || .#. Onset ㅡ FILLC _ BrightSyllable] .o.
+                            ~$[ %]SINGLEEU ] .o.  [ %]SINGGLEEU -> 0 ] ;
+
+define EolaRestriction        [[[ㄱ|ㅈ|ㄴ]ㅏ|[ㅇ|ㅂ] ㅗ] FILLC VerbStringSet ㅇ ㅓ FILLC ] => _ ㄹ ㅏ FILLC ;
+
+define VowelHarmony         BrightVowelHarmony .o. DarkVowelHarmony .o. 
+                            EUHarmony .o. SingleEUSyllable .o. EolaRestriction ;
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                                                                 !
+! 서술격 조사 '이' 탈락 현상                                                      !
+!                                                                                 !
+! 학생이다. : 학생/n* + 이/pp + 다/e*                                             !
+! 사과다.   : 사과/n* + 이/pp + 다/e*                                             !
+! 사과라면  : 사과 (무종성 체언) + 이 + 어미                                      !
+!                                                                                 !
+! 왼쪽에 무종성 체언이 오는 경우 '이'를 제거할 수 있다.                           !
+! 그러면, 사과 /n* /pp 다/e* 형태가 되고, 나중에 태그를 모두 없애므로 사라진다.   !
+!                                                                                 !
+! '여' 축약 현상 : '이 + 어 = 여'에 대한 변환 (서술격조사/용언) 모두 적용         !  
+! '이' 다음에 '어'가 올 때 발생된다.                                              !
+! 사과이어서, 사과여서 모두 가능.                                                 !
+! 즉 다음에 '어'가 올 때는 선택적으로 '여'로 축약될 수 있다.                      !
+! '이'가 없어지는 것이 아님.                                                      !
+!                                                                                 !
+! 사과였다. : 사과/nc + 이/pp + 었/ep + 다/ef => 사과/nc /pp 였/ep 다/ef          !
+! 높였다.   : 높이/vb + 었/ep + 다/ef  => 높였다.                                 !
+!          => 높이 [VBYI /vb ]VBYI 었/ep 다/ef                                    !
+!          => 높 ㅇ /vb ㅕ ㅆ /ep 다 /ef                                          !
+! 시켰다.   : 시키/xv + 었 + 다   => 시켰다.                                      !
+! 가렸다.   : 가리/vb + 었 + 다   => 가렸다.                                      !
+!                                                                                 !
+! '비다'(o), '비었다'(o), '볐다'(x) (자리가 비다 vj)                              !
+! '이다'(o), '이었다'(o), '였다'(x) (짊을 이다)                                   !
+! '지다'(o), '지었다'(o), '졌다'(o) (경기에서 지다)                               !
+! '지다'(o), '지었다'(o), '졌다'(o) (경기에서 성적이 나아졌다)                    !
+! '치다'(o), '치었다'(o), '쳤다'(o) (공을 치다)                                   !
+! '피다'(o), '피었다'(o), '폈다'(o) (돗자리를 폈다)                               !
+!                                                                                 !
+! 시키었다. 가리었다. 모두 가능 (본디말, 줄임말 모두 가능)                        !
+! 사과이다. 사과이라면. 모두 가능 (본디말, 줄임라 모두 가능)                      !
+!                                                                                 !
+! 서술격 조사 '이'가 탈락하는 것은 선택적이고, 용언의 경우도 마찬가지이다.        !
+!                                                                                 !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+! 서술격 조사 '이' 다음에는 '아'로 시작하는 어미는 올 수 없다.
+! '이' 발음은 음성 모음이므로 '어/아' 중 '어'가 와야 한다.
+! '사과/nc이/pp아야지/ec'
+define PPFilter          ~$[ %/pp ㅇ ㅏ ] ;
+
+! 서술격 조사 '이' 탈락 현상
+! 사과며 ('사과이며'도 가능)
+define PPSyllable       [ ㅇ ㅣ FILLC ] ;
+define NotEo            [ [Onset - ㅇ] [Peak - ㅓ] ] ;
+define DelPPSyllable    PPSyllable (->) 0 || FILLC NounStringSet _ %/pp NotEo ;
+
+! 서술격 조사 '이'의 축약현상으로 '여'가 될 때 
+! 사과였다 ('사과이었다'도 가능)
+define ShortenYIPP      [ㅇ ㅣ FILLC %/pp ㅇ ㅓ] (->) %/pp ㅇ ㅕ || FILLC NounStringSet _ ;
+
+! 용언인데 '이'로 끝난 단어가 '어'와 만날 때 (높였다)
+! 지다(o), 치다(o), 피다(o), 이다 (x), 비다(x)
+define ShortenYIVB      [ VerbStringSet -> %[VBYINOT ... %]VBYINOT || .#. [ㅇ | ㅂ] ㅣ FILLC _ ㅇ ㅓ ] .o.
+                        [ VerbStringSet (->) %[VBYI ... %]VBYI || Onset ㅣ FILLC _ ㅇ ㅓ ] .o.
+                        [ ㅣ FILLC %[VBYI  -> 0 ] .o. [ %]VBYI ㅇ ㅓ -> ㅕ ] .o.
+                        [ %[VBYINOT -> 0 ] .o. [ %]VBYINOT -> 0] ;    
+
+! 아녀 : 아니/vn + 어/ef ==> 그냥 아녀/it, 아냐/it (감탄사)로 놓는다.
+! 아뇨 : 아니/vn + 오/ef
+! 아녔다 : 이런 말은 없음. 아니었다. (즉, 아니다는 줄임형이 없다.)
+
+! '이' 탈락 & '이' 축약
+define RuleYI           PPFilter .o. DelPPSyllable .o. ShortenYIPP .o. ShortenYIVB ;
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                                                                 !
+! '으' 탈락 현상 : 모아 : 모으 + 아                                               !
+!                                                                                 !
+! 아프 /vb + 았 /ep + 고 /ec => 아 ㅍ ㅡ %_ %[VBEU /vb %]VBEU ㅇ ㅏ ㅆ /ep        !
+!                            => 아 ㅍ /vb + ㅏ ㅆ /ep + 고 /ec                    !
+!                                                                                 !
+! '으'로 끝나는 모든 용언 + '아'/'어'로 시작하는 어미가 올 때 '으'가 탈락된다.    !
+!                                                                                 !
+! 쓰지만, 쓰고, 썼습니다 (쓰 + 었습니다), 써서 (쓰 + 어도), 써도 (쓰 + 어도)      !
+! 아프지만, 아프고, 아팠습니다, 아파서, 아파도                                    !
+!                                                                                 !
+! '으' 탈락규칙 용언 : 쓰다 (글이), 따르다, 뜨다, 끄다, 담그다, 기쁘다, 바쁘다    !
+!                      슬프다, 쓰다 (맛이)                                        !
+!                                                                                 !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+define MarkVerbEU    VerbStringSet -> %[VBEU ... %]VBEU || Onset ㅡ FILLC _ ㅇ [ㅏ | ㅓ] ;
+define DropEU       MarkVerbEU .o. [ ㅡ FILLC %[VBEU -> 0 ] .o. [ %]VBEU ㅇ -> 0 ] ;
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! 매개모음 '으'의 삽입 현상
+!
+! 'ㄹ'이 아닌 받침 있는 용언이 '니, ㄹ, 오, 시, ㅁ' 앞에서 '으' 가 삽입됨.
+! 예) 잡+ㄴ=> 잡은, 잡+ㄹ=> 잡을, 잡+오=>잡으오, 잡+시+고=>잡으시고
+!     잡+ㅁ=> 잡음, 잡+세요(시어요)=> 잡으세요
+!
+! 먹으면   => 먹/vb + 으 면/ec
+! 먹으셔서 => 먹/vb + 으 시/ep 서/ec
+! 먹은     => 먹/vb + 으 ㄴ/ed
+! 먹으니까 => 먹/vb + 으 니까/ec
+! 먹나     => 먹/vb + 나/ec
+! 먹냐며   => 먹/vb + 냐며/ec
+! 먹는다   => 먹/vb + 는다/ef ('는'의 경우는 '으'가 삽입 안됨)
+! 먹는     => 먹/vb + 는/ed
+!
+! 도우면   => 돕/vb + 으 면/ed  (나중에 ㅂ 불규칙 처리해야 함)
+!
+! 갈 + 셔서 => 가 셔서 (ㄹ 탈락)
+!
+! 하였었음을, 하였으니, 하였을, 하겠을, 하겠으리라고, 하겠음. 하겠니, 하신
+!
+! 유종성 선어말어미 : 했음을, 했을, 했으리라고, 계셨으리라고 (%_ㅁ, %_ㄹ, ㄹ)
+! 무종성 선어말어미 : 하신, 하심, 하실, 하시리라고 (아무 변화 없음)
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! 선어말 어미 다음에 'ㅏ'로 시작하는 어미가 오지 않는다.
+! 했었어야지 (o), 했었아야지 (x)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+
+define InsertEU1        [..] -> [ㅇ ㅡ FILLC] || [Coda - FILLC - %_ㄹ] (IrrSet) 
+                        VerbStringSet _ [ㄴ ㅣ | ㄹ | ㅁ | ㅅ ㅣ | ㅇ ㅗ ] ; 
+define InsertEU2        [..] -> [ㅇ ㅡ] || [Coda - FILLC - %_ㄹ] (IrrSet) 
+                        VerbStringSet _ [%_ㄴ | %_ㄹ | %_ㅁ] ;
+define InsertEU3        [..] -> [ㅇ ㅡ FILLC] || %_ㅅㅅ %/ep _ ㄹ ; 
+define InsertEU4        [..] -> [ㅇ ㅡ] || %_ㅅㅅ %/ep _ [%_ㄹ | %_ㅁ] ;
+define InsertEU         InsertEU1 .o. InsertEU2 .o. InsertEU3 .o. InsertEU4 ;
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! 'ㄹ' 탈락 현상 : 잘 아네 (알 + 네)
+!
+! 오른쪽에는 '종성 ㄴ' '초성 ㄴ' '종성 ㅂ' '시' '오' '종성 ㄹ' '세' 가 온다.
+!
+! 'ㄹ' 탈락은 용언의 어간이 'ㄹ'로 끝나고 그 뒤에 어미 '종성 ㄴ' '초성 ㄴ' 
+! 'ㅂ니다' '시' '세요' '오' 등이 올 때 'ㄹ'이 탈락하는 현상
+!
+! 알면, 알고, 안, 아네, 압니다, 아시지요, 아신지, 아세요, 아오, 아니까
+! 길면, 길고, 긴, 기네, 깁니다, 기시지요, 기신지, 기세요, 기오, 기니까
+!
+! 'ㄹ' 탈락 규칙 용언 : 살다, 울다, 놀다, 불다, 갈다, 멀다, 달다, 둥글다, 어질다
+!
+! 알/vb + ㅂ니다/ef => ㅇ ㅏ %_ㄹ/vb + %_ㅂ ㄴ ㅣ %_ ㄷ ㅏ %_ /ef
+! 알/vb + 니까/ef   => ㅇ ㅏ %_ㄹ/vb + ㄴ ㅣ %_ ㄲ ㅏ %_ /ef
+!                   => ㅇ ㅏ     /vb + ㄴ ㅣ %_ ㄲ ㅏ %_ /ef
+!
+! *나중에 "모음 용언품사 자음" 순으로 심벌이 진행될 때 사이에 %_를 넣는다. 
+!
+! * '오' 불규칙 활용
+!
+!   '달/vb' + '아라'일 때 '아라'가 '오'로 변형된 후, 'ㄹ' 탈락 현상 뒤에
+!   '다오'로 바뀐다. (말하는 이가 듣는 이에게 어떤 것을 주도록 요구하는 동사)
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+define IrrConjO     ㅏ FILLC ㄹ ㅏ FILLC -> ㅗ || ㄷ ㅏ %_ㄹ %/vb ㅇ _ %/ef ;
+
+define DropL        %_ㄹ -> 0 || _ VerbStringSet 
+                    [%_ㄴ | %_ㅂ | %_ㄹ | ㄴ | [ㅅ ㅣ] | [ㅇ ㅗ] | [ㅅ ㅔ]] ; 
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! 'ㅅ' 불규칙 현상 (/irrs) : 그었다 (긋 + 었다)
+!
+! 'ㅅ' 불규칙은 어간의 ㅅ 받침이 모음으로 시작하는 어미 앞에서 탈락하는 활용
+!
+! 긋 + 어 => 그어, 낫 + 어 => 나어
+!
+! 규칙활용이 있음 : 벗 + 어 => 벗어
+!
+! 긋/irrs/vb + 었/ep + 다/ef 
+!
+!     => ㄱ ㅡ ㅅ /irrs /vb + ㅇ ㅓ %_ㅆ /ep + ㄷ ㅏ %_ /ef
+!     => ㄱ ㅡ    /irrs /vb + ㅇ ㅓ %_ㅆ /ep + ㄷ ㅏ %_ /ef
+!
+! 긋/irrs/vb + 니/ec => 긋/irrs/vb + 으 니/ec => 그으니
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+define DropS        %_ㅅ -> 0 || _ %/irrs VerbStringSet ㅇ ;
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! 'ㄷ' 불규칙 현상 (/irrd) : 깨달아 (깨닫 + 아)
+!
+! 어간의 'ㄷ' 받침이 모음으로 시작하는 어미 앞에서 'ㄹ' 받침으로 바뀌는 활용
+! 동사에만 있고 형용사에는 없음.
+!
+! 깨닫 + 아 => 깨달아, 붇 + 어 => 불어, 깨닫 + 니 => 깨달 으 니
+!
+! 규칙활용이 있음 : 믿 + 어 => 믿어
+!
+! 깨닫/irrd/vb + 았/ep + 다/ef
+!
+!     => ㄷ ㅏ %_ㄷ /irrd /vb + ㅇ ㅏ %_ㅆ /ep + ㄷ ㅏ %_ /ef
+!     => ㄷ ㅏ %_ㄹ /irrd /vb + ㅇ ㅏ %_ㅆ /ep + ㄷ ㅏ %_ /ef
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+define IrrConjD        %_ㄷ -> %_ㄹ || _ %/irrd %/vb ㅇ ;
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! 'ㅂ' 불규칙 (/irrb) : 도우면 (돕 + 면)
+!
+! 어간의 'ㅂ' 받침이 모음으로 시작하는 어미 앞에서 'ㅜ'로 바뀌는 활용.
+!
+! 도우면 => 돕/irrb/vb + 으 면/ec                (으 삽입 후 ㅂ 불규칙 처리)
+!        => ㄷ ㅗ %_ ㅇ ㅜ /irrb/vb + ㅇ ㅡ %_ 면/ec (우측모음 'ㅡ' -> '우')
+!        => ㄷ ㅗ %_ ㅇ ㅜ /irrb/vb + 면/ec              ('ㅇ ㅡ %_'를 삭제) 
+!        => 도우면 (FillNullCoda에서 %_가 삽입되게 된다.)
+!
+! 도와   => 돕/irrb/vb + 아/ec
+!        => ㄷ ㅗ %_ ㅇ ㅜ   /irrb/vb + ㅇ ㅏ %_ /ec
+!        => ㄷ ㅗ %_ ㅇ      /irrb/vb +    ㅘ /ec
+!
+! 도운   : 돕 + ㄴ => 돕 + ㅇ ㅡ ㄴ => 도우 + ㅇ ㅡ ㄴ => 도우 + ㄴ => 도운
+! 도우니 : 돕 + 니 => 돕 + ㅇ ㅡ %_ 니 => 도우 + 니 => 도우니
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+define PhnOnsetCtxt   [ ㄴ | ㄹ | ㅁ | ㅅ ㅣ | ㅇ ㅗ ] ;
+define PhnCodaCtxt    [ %_ㄴ | %_ㄹ | %_ㅁ ] ;
+define ChangeB        %_ㅂ -> FILLC ㅇ ㅜ || _ %/irrb VerbStringSet ㅇ ;
+define DeleteBEU      ㅇ ㅡ (FILLC) @-> 0 || %/irrb VerbStringSet _ [ PhnOnsetCtxt | PhnCodaCtxt ] ;
+define IrrConjB       ChangeB .o. DeleteBEU ;
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! '르' 불규칙 (/irrl) : 굴러 (구르 + 어) 
+!
+! 어간의 끝소리 '르'가 어미 '아/어' 앞에서 'ㄹㄹ'로 바뀌는 활용
+!
+! 굴러   => 구르/irrl/vb + 어/ec
+!        => ㄱ ㅜ %_   ㄹ ㅡ %_ /irrl/vb ㅇ ㅓ %_ /ec
+!        => ㄱ ㅜ %_ㄹ ㄹ       /irrl/vb    ㅓ %_ /ec
+!
+! 몰랐다 => 모르/irrl/vb + 았/ep + 다/ef
+!        => ㅁ ㅗ %_   ㄹ ㅡ %_ /irrl/vb ㅇ ㅏ %_ㅅㅅ/ep
+!        => ㅁ ㅗ %_ㄹ ㄹ       /irrl/vb    ㅏ %_ㅅㅅ/ep
+!
+! '몰랐다'는 모음 조화 현상에서 '몰'의 '오'에 의해 양성 '아'가 붙었음.
+!
+! '이르다'는 '르' , '러' 변칙이 있어서, '이르러'일 때는 '러'변칙에만 해당
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+define MarkIrrl     %/irrl VerbStringSet -> %[IRRl ... %]IRRl || FILLC ㄹ ㅡ FILLC _ ㅇ [ㅏ|ㅓ] ;
+define IrrConjl     ~$[ ㅇ ㅣ FILLC ㄹ ㅡ FILLC %/irrl VerbStringSet ㄹ [ㅓ|ㅏ] ] .o.
+                    MarkIrrl .o. [ FILLC ㄹ ㅡ FILLC %[IRRl -> %_ㄹ ㄹ ] .o. [ %]IRRl ㅇ -> 0 ] ;
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! '러' 불규칙 (/irrL) : 이르러 (이르 + 어)
+!
+! '르'로 끝나는 어간 뒤에서 '어'가 '러'로 바뀌는 활용
+!
+! 이르러 => 이르/irrL/vb + 어/ec
+!        => ㅇ ㅣ %_ ㄹ ㅡ %_ /irrL/vb ㅇ ㅓ %_ /ec
+!        => ㅇ ㅣ %_ ㄹ ㅡ %_ /irrL/vb ㄹ ㅓ %_ /ec
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+define IrrConjL     ~$[ %/irrL VerbStringSet ㄹ [ㅓ|ㅏ] ] .o.
+                    [ ㅇ -> ㄹ || %/irrL VerbStringSet _ ㅓ ] ;
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! '우' 불규칙 (/irru) : 퍼 (푸 + 어)
+!
+! 어간의 끝 '우'가 '어' 앞에서 탈락하는 활용. '푸다'가 유일함. 
+! 푸 + 어 => 퍼, (규칙) 주 + 어 => 줘
+!
+! 퍼 => 푸/irru/vb + 어/ec
+!    => ㅍ ㅜ %_ /irru/vb ㅇ ㅓ %_ /ec
+!    => ㅍ       /irru/vb    ㅓ %_ /ec
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+define MarkIrru        %/irru VerbStringSet -> %[IRRu ... %]IRRu || ㅜ FILLC _ ㅇ ㅓ ;
+define IrrConju        MarkIrru .o. [ ㅜ FILLC %[IRRu -> 0 ] .o. [ %]IRRu ㅇ -> 0 ] ;
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! '하다' + '어'   => '하여'    '하다' + '어'   => '해' 
+! '하다' + '어서' => '하여서'  '하다' + '어서' => '해서'
+! '하다' + '었다' => '하였다'  '하다' + '었다' => '했다'
+!
+! 하여  => * ㅎ ㅏ %_ /vb + ㅇ ㅓ * /e*
+!   (1) => * ㅎ ㅏ %_ /vb + ㅇ ㅕ * /e*
+!   (2) => * ㅎ       /vb +    ㅐ * /e*
+!       => (1) | (2)
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+define IrrConjYEO1  ㅓ -> ㅕ || ㅎ ㅏ FILLC [%/vb|%/vi|%/vj|%/vx|%/xj|%/xv] ㅇ _ ;
+define IrrConjYEO2  ㅏ FILLC %/vb ㅇ ㅕ (->) %/vb ㅐ || ㅎ _  .o.
+                    ㅏ FILLC %/vi ㅇ ㅕ (->) %/vi ㅐ || ㅎ _  .o.
+                    ㅏ FILLC %/vj ㅇ ㅕ (->) %/vj ㅐ || ㅎ _  .o.
+                    ㅏ FILLC %/vx ㅇ ㅕ (->) %/vx ㅐ || ㅎ _  .o.
+                    ㅏ FILLC %/xj ㅇ ㅕ (->) %/xj ㅐ || ㅎ _  .o.
+                    ㅏ FILLC %/xv ㅇ ㅕ (->) %/xv ㅐ || ㅎ _  ;
+
+define IrrConjYEO    IrrConjYEO1 .o. IrrConjYEO2 ;
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! '거라' 불규칙/'너라' 불규칙
+!
+! 가거라(가+어라), 보거라(보+어라), 있거라(있+어라), 자거라(자+거라), 
+! 나거라(나+어라), 삼가거라(삼가+어라), 오너라 (오+어라)
+!
+! 가라(가+라), 보라(보+라), 봐라(보+아라), 있어라(있+어라), 
+! 자라(자+라), 나라(나+라), 오라(오+라  ), 와라(오+아라)
+!
+! 있어라 | 있거라
+!
+! 가거라 => ㄱ ㅏ %_ /vb + ㅇ ㅓ %_ ㄹ ㅏ %_ (고) /e*
+!           ㄱ ㅏ %_ /vb + ㄱ ㅓ %_ ㄹ ㅏ %_ (고) /e*
+!
+! 있거라 => ㅇ ㅣ %_ㅅㅅ /vb + ㅇ ㅓ %_ ㄹ ㅏ %_ (고) /e*
+!           ㅇ ㅣ %_ㅅㅅ /vb + ㄱ ㅓ %_ ㄹ ㅏ %_ (고) /e*
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+define IrrGeola1    ㅇ ->   ㄱ || [[ㄱ|ㅈ|ㄴ]ㅏ|ㅂ ㅗ] FILLC VerbSet _ ㅓ FILLC ㄹ ㅏ FILLC ;
+define IrrGeola2    ㅇ (->) ㄱ || ㅇ ㅣ %_ㅅㅅ VerbSet _ ㅓ FILLC ㄹ ㅏ FILLC ;
+define IrrNeola     ㅇ ->   ㄴ || ㅇ ㅗ FILLC VerbSet _ ㅓ FILLC ㄹ ㅏ FILLC ;
+define IrrEola      IrrGeola1 .o. IrrGeola2 .o. IrrNeola ;
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! 'ㅎ' 불규칙 활용
+!
+! 형용사 어간 끝 'ㅎ'이 어미 'ㄴ', 'ㄹ', 'ㅁ' 'ㅂ' 앞에서 사라지고,
+! 어미 '아/어' 앞에서 'ㅣ'로 바뀌어 합쳐지는 활용.
+!
+! * 그럽니다, 까맙니다. 동그랍니다, 퍼럽니다. 하얍니다 등의 용례는
+!   1994년 12월 16일에 열린 국어 심의 회의 결정에 따라 삭제되었음.
+!   다만 구어적으로 사용되는 경우가 많아서 'ㅂ'의 경우도 처리함.
+!
+! 까맣다 : 까매, 까만, 까마니, 까마면, 까맸다, 까맙니다, 까맣소.
+! 하얗다 : 하얘, 하얀, 하야니, 하야면, 하앴다, 하얍니다. 하얗소.
+! 말갛다 : 말개, 말간, 말가니, 말가면, 말갰다, 말갑니다. 말갛소.
+! 멀겋다 : 멀게, 멀건, 멀거니, 멀거면, 멀겠다, 멀겁니다. 멀겋소.
+! 
+! 퍼레, 뻘게, 누레, 파라면 (파랗 + 으면 => 파라면), 파랬다, 퍼렜다
+! 멀게 (멀겋 + 어 (?)), 퍼레, 퍼레지다, 허얘 (허옇)
+!
+! 규칙) 놓다, 넣다, 낳다, 찧다, 쌓다, 좋다, 싫다, 많다, 괜찮다
+! 그런데, '빨리 놔 (놓+ㅏ)'와 같이 ㅎ 불규칙으로 사용하는 경우가 많다.
+! '따 논 당상' (놓+은) '놔'에 대해서만 특별히 처리하겠다.
+!
+! 까마니 : ㄲ ㅏ %_ ㅁ ㅏ %_ㅎ /irrh/vj +          ㄴ ㅣ %_ /ec
+!          ㄲ ㅏ %_ ㅁ ㅏ %_ㅎ /irrh/vj + ㅇ ㅡ %_ ㄴ ㅣ %_ /ec (으 삽입)
+!          ㄲ ㅏ %_ ㅁ ㅏ      /irrh/vj + ㅇ ㅡ %_ ㄴ ㅣ %_ /ec (ㅎ 삭제)
+!          ㄲ ㅏ %_ ㅁ ㅏ      /irrh/vj +          ㄴ ㅣ %_ /ec (으 삭제)
+!
+! 파랬다 : ㅍ ㅏ %_ ㄹ ㅏ %_ㅎ /irrh/vj + ㅇ ㅏ %_ㅅㅅ /ep
+!          ㅍ ㅏ %_ ㄹ         /irrh/vj +    ㅐ %_ㅅㅅ /ep (ㅏ %_ㅎ ㅇ => ㅐ)
+! 퍼레   : ㅍ ㅓ %_ ㄹ ㅓ %_ㅎ /irrh/vj + ㅇ ㅓ %_ㅅㅅ /ep (ㅓ %_ㅎ ㅇ => ㅔ)
+! 하얘   : ㅎ ㅏ %_ ㅇ ㅑ %_ㅎ /irrh/vj + ㅇ ㅓ %_     /ec (ㅑ %_ㅎ ㅇ => ㅒ)
+! 허예   : ㅎ ㅓ %_ ㅇ ㅕ %_ㅎ /irrh/vj + ㅇ ㅓ %_     /ec (ㅕ %_ㅎ ㅇ => 예)
+!
+! *) ~놔   ==> 놓 + 아 형태로 특별히 만든다. 
+! 하앴다 : 하얗다의 과거형.
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+define ChangeHRule  ㅏ %_ㅎ %/irrh %/vj ㅇ ㅏ -> %/irrh %/vj ㅐ ,
+                    ㅑ %_ㅎ %/irrh %/vj ㅇ ㅓ -> %/irrh %/vj ㅒ ,
+                    ㅓ %_ㅎ %/irrh %/vj ㅇ ㅓ -> %/irrh %/vj ㅔ ,
+                    ㅕ %_ㅎ %/irrh %/vj ㅇ ㅓ -> %/irrh %/vj ㅖ ,
+                    ㅓ %_ㅎ %/irrh %/vi ㅇ ㅓ -> %/irrh %/vi ㅔ ;
+
+define PhnOnsetNLM   [ ㄴ | ㄹ | ㅁ ] ;
+define PhnCodaNLM    [ %_ㄴ | %_ㄹ | %_ㅁ ] ;
+define ChangeH       %_ㅎ -> 0 || _ %/irrh [%/vj | %/vi] 
+                                [ ㅇ ㅡ [ PhnCodaNLM | FILLC PhnOnsetNLM ] | %_ㅂ ] ;
+define DeleteHEU1    ㅇ ㅡ FILLC -> 0 || %/irrh [%/vj | %/vi] _ PhnOnsetNLM ;
+define DeleteHEU2    ㅇ ㅡ       -> 0 || %/irrh [%/vj | %/vi] _ PhnCodaNLM  ;
+define DeleteHEU     DeleteHEU1 .o. DeleteHEU2 ;
+
+define IrrConjH      ChangeHRule .o.  ChangeH .o. DeleteHEU1 .o. DeleteHEU2 ;
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! 이중모음 법칙
+!
+!    ① ㅣ+ㅓ→ ㅕ   이+어→ 여   가리+어 → 가려 (RuleYI에서 처리됨)
+!    ② ㅗ+ㅏ→ ㅘ   오+아→ 와   오+아서 → 와서  
+!    ③ ㅜ+ㅓ→ ㅝ   우+어→ 워   두+었다 → 뒀다
+!    ④ ㅚ+ㅓ→ ㅙ   외+어→ 왜   되+어   → 돼
+!    ⑤ ㅏ+ㅕ→ ㅐ   아+여→ 애   하+여   → 해
+!
+! 와   : ㅇ ㅗ %_ /vb + ㅇ ㅏ %_ /ef => ㅇ /vb + ㅘ/ef
+! 봐   : ㅂ ㅗ %_ /vb + ㅇ ㅏ %_ /ef => ㅂ /vb + ㅘ/ef 
+! 가   : ㄱ ㅏ %_ /vb + ㅇ ㅏ %_ /ef => ㄱ /vb + ㅏ/ef
+! 됐다 : ㄷ ㅚ %_ /vb + ㅇ ㅓ %_ㅆ /ep + ㄷ ㅏ %_ /ef => ㄷ /vb + ㅙㅆ/ep ..
+!
+! 오아서(x), 와서(o) ('오'의 경우는 반드시 줄여서 사용한다)
+! 보아서(o), 봐서(o), 보아도(o), 보아서(o) ('보'의 경우는 줄이는 것이 옵션)
+!
+! 건너도(o), 건너(o), 건너서(o), 가도(o), 건너어도(x), 가아도(x)
+!
+! 났다 (나 + 았다), 나았다 (낫 + 았다)
+! 나아도(o), 나도(x), 나(o) (낫+아), 나도(x) (낫 + 아도) (/irrs 줄임 안됨)
+! 내저어(o), 내저(x) (내젓/irrs/vb + 어/ef) (/irrs의 경우 줄임 안됨)
+! 되어도(o), 되어(o), 돼(o) (되+어), 돼도(o)
+! 주어도(o), 줘도(o), 주어(o)
+! 피어도(o), 피어(o), 펴(o)
+! 고아도(o), 고아(o), 고아서(o), 과서 (국을 과서) 
+! 굶주리어도(o), 굶주려도(o)
+!
+! 겨눠도(o), 겨눠(o), 겨누어(o)
+! 곁들여도(o), 곁들여(o), 곁들이어(o)
+! 키워도(o), 키워(o), 키우어(x) 
+! 치워도(o), 치워(o), 치우어(x)
+! ('우' + '어' => 안된다. 용언의 마지막 음절이 'ㅇ'이 있을 때는 항상 줄임)
+! ('오' + '아' => 안된다. 용언의 마지막 음절이 'ㅇ'이 있을 때는 항상 줄임)
+!
+! 붓다 + 어 => 부어. (붜 는 안됨.)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+define MarkDiphOA        (IrrSet) VerbStringSet (@->) %[DIPH1 ... %]DIPH1 || [Onset - ㅇ] ㅗ (FILLC) _ ㅇ ㅏ ; ! ㅘ
+define MarkDiphUEO       (IrrSet - %/irrs) VerbStringSet (@->) %[DIPH2 ... %]DIPH2 || [Onset - ㅇ] ㅜ (FILLC) _ ㅇ ㅓ ; ! ㅝ
+define MarkDiphWAEO      (IrrSet) VerbStringSet (@->) %[DIPH3 ... %]DIPH3 || ㅚ (FILLC) _ ㅇ ㅓ              ; ! ㅙ
+
+! For compiling in HFST, use the follwing rewrite-rule in equivalent notation
+!define MarkDiphOA       [ $[(IrrSet) VerbStringSet @-> %[DIPH1 ... %]DIPH1 || [Onset - ㅇ] ㅗ (FILLC) _ ㅇ ㅏ ] ]* ; ! ㅘ
+!define MarkDiphUEO      [ $[(IrrSet - %/irrs) VerbStringSet @-> %[DIPH2 ... %]DIPH2 || [Onset - ㅇ] ㅜ (FILLC) _ ㅇ ㅓ ] ]* ; ! ㅝ
+!define MarkDiphWAEO     [ $[(IrrSet) VerbStringSet @-> %[DIPH3 ... %]DIPH3 || ㅚ (FILLC) _ ㅇ ㅓ ] ]*              ; ! ㅙ
+
+define MarkDiphUA        (IrrSet) VerbStringSet  @->  %[DIPH4 ... %]DIPH4 || ㅜ (FILLC) _ ㅇ ㅏ             ; ! ㅜ ㅏ
+define MarkDiphAA        (IrrSet - %/irrs) VerbStringSet @->
+                                                     %[DIPH5 ... %]DIPH5 || ㅏ (FILLC) _ ㅇ ㅏ              ; ! ㅏ
+define MarkDiphEOEO      (IrrSet - %/irrs) VerbStringSet @->
+                                                     %[DIPH6 ... %]DIPH6 || ㅓ (FILLC) _ ㅇ ㅓ              ; ! ㅓ
+define MarkDiphOA2       (IrrSet) VerbStringSet  @->  %[DIPH1 ... %]DIPH1 || ㅇ ㅗ (FILLC) _ ㅇ ㅏ          ; ! ㅘ
+define MarkDiphUEO2      (IrrSet) VerbStringSet  @->  %[DIPH2 ... %]DIPH2 || ㅇ ㅜ (FILLC) _ ㅇ ㅓ          ; ! ㅝ
+
+define MarkDiph          MarkDiphOA .o. MarkDiphUEO .o. MarkDiphWAEO .o. MarkDiphUA .o. 
+                         MarkDiphAA .o. MarkDiphEOEO .o. MarkDiphOA2 .o. MarkDiphUEO2 ;
+
+define RuleDiph         ㅗ (FILLC) %[DIPH1 -> 0 , %]DIPH1 ㅇ ㅏ -> ㅘ ,
+                        ㅜ (FILLC) %[DIPH2 -> 0 , %]DIPH2 ㅇ ㅓ -> ㅝ ,
+                        ㅚ (FILLC) %[DIPH3 -> 0 , %]DIPH3 ㅇ ㅓ -> ㅙ ,
+                        ㅜ (FILLC) %[DIPH4 -> 0 , %]DIPH4 ㅇ ㅏ -> ㅘ ,
+                        ㅏ (FILLC) %[DIPH5 -> 0 , %]DIPH5 ㅇ ㅏ -> ㅏ ,
+                        ㅓ (FILLC) %[DIPH6 -> 0 , %]DIPH6 ㅇ ㅓ -> ㅓ ;
+
+define ConjDiph         MarkDiph .o. RuleDiph ;
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! 어미가 '애'/'에'로 끝나는 용언 뒤에 '어'가 올 때 '어'의 탈락 현상
+!
+! 본디말/줄임말 모두 된다. 깨, 깨어, 개었다. 갰다. 메어, 메.
+!
+! 베어도(o), 베어(o), 베(o) (베+어)
+! 개어도(o), 개서(o), 개(o) (개+어)
+!
+! 깨      -> 깨/vb + 어/ec
+! 갰다    -> 개/vb + 었/ep + 다/ef
+! 메      -> 메/vb + 어/ec
+!
+! 깨  : ㄲ ㅐ %_ /vb + ㅇ ㅓ %_ㅅㅅ/ep 
+!       ㄲ       /vb +    ㅐ %_ㅅㅅ/ep
+! 메  : ㅁ ㅔ %_ /vb + ㅇ ㅓ %_ㅅㅅ/ep
+!       ㅁ       /vb +    ㅔ %_ㅅㅅ/ep
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+define ConjEAE  ㅔ FILLC %/vb ㅇ ㅓ (->) %/vb ㅔ , ㅐ FILLC %/vb ㅇ ㅓ (->) %/vb ㅐ ,
+                ㅔ FILLC %/vj ㅇ ㅓ (->) %/vj ㅔ , ㅐ FILLC %/vj ㅇ ㅓ (->) %/vj ㅐ ,
+                ㅔ FILLC %/vx ㅇ ㅓ (->) %/vx ㅔ , ㅐ FILLC %/vx ㅇ ㅓ (->) %/vx ㅐ ;
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! 종성 탈락현상으로 인해 종성이 사라졌을 때 무음가 종성을 삽입한다.
+!
+! 알/vb + 니까/ef
+! ㅇ ㅏ     /vb + ㄴ ㅣ %_ ㄲ ㅏ %_ /ef => ㅇ ㅏ %_ ㄴ ㅣ %_ ㄲ ㅏ %_
+!
+! 긋/vb + 어/ef
+! ㄱ ㅡ  /irrs /vb + ㅇ ㅓ %_ /ef => ㄱ ㅡ %_ ㅇ ㅓ %_
+!
+! 가/vb + ㄴ다/ef
+! ㄱ ㅏ %_ /vb + %_ㄴ ㄷ ㅏ %_ /ef
+!
+! 그걸 : 그거/nm + _ㄹ/po
+! 무종성 체언에 _ㄹ이 붙는다. 이 때 앞 종성 Filler는 없앤다.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+define ChangeNullCoda   [..] -> FILLC || Peak _ (IrrSet) VerbStringSet Onset .o. 
+                        FILLC -> 0 || Peak _ (IrrSet) VerbStringSet [%_ㄴ | %_ㄹ | %_ㅁ | %_ㅂ | %_ㅇ | %_ㅅ] .o. 
+                        FILLC -> 0 || Peak _ [NounSet | %/ec | %/ef | %/pa | %/pc | %/pq | %/px | %/ps ] 
+                                      [%_ㄴ | %_ㄹ] (Syllable) [ %/po | %/px | %/pa ] ;
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! 대표적인 줄임말
+!
+! 가셔요 , 가세요 -> 가/vb + 시/ep + 어요/ef
+! 가셨다          -> 가/vb + 시/ep + 었/ep + 다/ef
+! 놔              -> 놓/vb + 아/ef
+! 이래            -> 이러하/vj + 어/ec
+! 그래            -> 그러하/vj + 어/ec
+! 저래            -> 저러하/vj + 어/ec
+! 어때            -> 어떠하/vj + 어/ec
+!
+! 예외숙어) 이래 (이러하+어), 그래 (그러하+어), 저래(저러하+어), 어때(어떠하+어)
+!           이래 (이렇+어), 그래 (그렇+어), 저래(저렇+어), 어때(어떻+어)
+!            이랬다 , 그랬다 , 저랬다  -> 이러하 + 었 + 다
+!
+! '어떻다', '그렇다'가 '어떼', '그레'가 아닌 '어때', '그래'와 같이 활용하는 
+! 이유는 '어떻다'의 본말이 '어떠하다', '그렇다'의 본말이 '그러하다'인데, 
+! 이러한 본말 형태가 활용에 영향을 주었기 때문입니다. 
+! '저렇다', '이렇다'의 활용도 마찬가지입니다
+!
+! 여기서는 원형인 '이러하' '그러하' '저러하' '어떠하'로 바꾸었다.
+!
+! 하지 -> 치 줄임말
+!
+! 흔치 않다. (흔하지 않다), 깨끗치 않다. (깨끗하지 않다)
+! 넉넉치 않다. (넉넉하지 않다), 능치 않다. (능하지 않다)
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+define ChangeNWA1   ㄴ ㅗ %_ㅎ %/vb ㅇ ㅏ (->) ㄴ %/vb ㅘ ; ! 놓/vb 아/ec (놔 두었다)
+define ChangeNWA2   ㄴ ㅗ %_ㅎ %/vx ㅇ ㅏ (->) ㄴ %/vx ㅘ ; ! 놓/vx 아/ec (거둬 놔)
+define ChangeSYEO   ㅅ ㅣ FILLC %/ep ㅇ ㅓ FILLC ㅇ ㅛ FILLC %/ef (->) 
+                    [ ㅅ %/ep ㅕ FILLC ㅇ ㅛ FILLC %/ef | ㅅ %/ep ㅔ FILLC ㅇ ㅛ FILLC %/ef ] ;
+define ChangeSYEOS  ㅅ ㅣ FILLC %/ep ㅇ ㅓ (->) ㅅ %/ep ㅕ ; ! 시+어 => 셔
+define ChangeHAEXT  ㅇ ㅣ FILLC ㄹ ㅓ FILLC ㅎ ㅏ FILLC %/vj ㅇ ㅕ (->) ㅇ ㅣ FILLC ㄹ %/vj ㅐ .o.
+                    ㄱ ㅡ FILLC ㄹ ㅓ FILLC ㅎ ㅏ FILLC %/vj ㅇ ㅕ (->) ㄱ ㅡ FILLC ㄹ %/vj ㅐ .o.
+                    ㅈ ㅓ FILLC ㄹ ㅓ FILLC ㅎ ㅏ FILLC %/vj ㅇ ㅕ (->) ㅈ ㅓ FILLC ㄹ %/vj ㅐ .o.
+                    ㅇ ㅓ FILLC ㄸ ㅓ FILLC ㅎ ㅏ FILLC %/vj ㅇ ㅕ (->) ㅇ ㅓ FILLC ㄸ %/vj ㅐ ;
+define ChangeHaji   ㅎ ㅏ FILLC %/vj ㅈ ㅣ FILLC %/ex (->) ㅊ %/vj ㅣ FILLC %/ex .o.
+                    ㅎ ㅏ FILLC %/xv ㅈ ㅣ FILLC %/ex (->) ㅊ %/xv ㅣ FILLC %/ex ;
+define ReducedWords ChangeNWA1 .o. ChangeNWA2 .o. ChangeSYEO .o. ChangeSYEOS .o. 
+                    ChangeHAEXT .o. ChangeHaji ;
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+! 
+! 형태소 과분석되는 것들 중 대표적인 몇 개만 Filtering Out 시킨다.
+!
+! 느/nc _ㄴ/px
+! 느/np _ㄴ/px
+! 으/nc _ㄴ/px
+! _ㄴ/ed 다/nc
+! _ㄴ/ed 다/nr
+! 르/nc _ㄹ/po
+! 르/nr _ㄹ/po
+! 으/nc _ㄹ/po
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+
+define AbnormalSequence [ ㄴ ㅡ FILLC %/nc %_ㄴ %/px |
+                          ㄴ ㅡ FILLC %/np %_ㄴ %/px |
+                          ㅇ ㅡ FILLC %/nc %_ㄴ %/px |
+                          %_ㄴ %/ed ㄷ ㅏ FILLC %/nc |
+                          %_ㄴ %/ed ㄷ ㅏ FILLC %/nr |
+                          ㄹ ㅡ FILLC %/nc %_ㄹ %/po |
+                          ㄹ ㅡ FILLC %/nr %_ㄹ %/po |
+                          ㅇ ㅡ FILLC %/nc %_ㄹ %/po ] ;
+define FilterOut        ~$[AbnormalSequence] ;
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! 한국어 형태소 조합 규칙을 모두 composition한다.
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+define AlternationRules NounParticleFilter  .o. ! 체언 + 조사 규칙 적용 : 사과는/사람은
+                        VerbEndingFilter    .o. ! 용언 + 어미 불가 필터 : 아름답+는/고마웠+아야지
+                        VowelHarmony        .o. ! 용언 모음 조화        : 막아/저어
+                        RuleYI              .o. ! '이' 축약 & '이' 생략 : 사과다/사과였다/가졌다
+                        DropEU              .o. ! '으' 탈락 현상        : 써도
+                        InsertEU            .o. ! '으' 삽입 현상        : 먹으면
+                        IrrConjO            .o. ! '오' 불규칙 현상      : 다오
+                        DropL               .o. ! 'ㄹ' 탈락 현상        : 아니까
+                        DropS               .o. ! 'ㅅ' 불규칙 현상      : 그어
+                        ConjEAE             .o. ! 'ㅐ'/'ㅔ'의 '어'탈락  : 메, 개, 갰다
+                        IrrConjD            .o. ! 'ㄷ' 불규칙 현상      : 깨달아
+                        IrrConjB            .o. ! 'ㅂ' 불규칙 현상      : 고와
+                        IrrConjl            .o. ! '르' 불규칙 현상      : 굴러
+                        IrrConjL            .o. ! '러' 불규칙 현상      : 푸르러
+                        IrrConju            .o. ! '우' 불규칙 현상      : 퍼
+                        IrrConjYEO          .o. ! '여' 불규칙 현상      : 하여, 해
+                        IrrEola             .o. ! '거라'/'너라' 불규칙  : 자거라, 오너라
+                        IrrConjH            .o. ! 'ㅎ' 불규칙 현상      : 하얘, 빨간
+                        ConjDiph            .o. ! 용언+어미 모음 축약   : 가(가+아), 됐다 (되+었+다)
+                        ReducedWords        .o. ! 줄임말들 처리         : 흔치 않다.
+                        FilterOut           .o. ! 기본적인 는/을/는다의 과분석 제거
+                        ChangeNullCoda ;        ! Null 종성 삽입/삭제
+                        
+
+</code></pre>
+</body>
+</html>

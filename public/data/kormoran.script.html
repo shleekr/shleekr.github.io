@@ -1,0 +1,72 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" href="../css/styles/default.css">
+<script src="../css/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+</head>
+<body>
+
+<pre><code class="regexp">
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                                                      !
+!               R O U Z E T A    한국어 형태소 분석기                  !
+!                                                                      !
+!                                                                      !
+!                                                    이 상호           !
+!                                                                      !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!!!!!!!!!!!!!!!!!!!!!!
+! Read Korean Lexicon !
+!!!!!!!!!!!!!!!!!!!!!!!
+
+read lexc korean.lexc
+define Lexicon ;
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Split Hangul to Onset/Peak/Coda !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+source splithangul.foma
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Define Alternation Rules        !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+source morphrules.foma
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Define a Single Word Phrase     !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+define SingleWordPhrase     Lexicon .o. SplitHangul .o.                     ! 사전으로부터 자소 분리
+                            AlternationRules .o.                            ! 변환규칙 적용
+                            RemoveTags .o.                                  ! 품사/불규칙 태그 삭제
+                            SplitHangul.i .o.                               ! 자소를 한글로 바꿈
+                            ~$[Syllable] .o. ~$[KorChar] .o. ~$[CodaOnly] ; ! 자소열, 자모만, 종성 글자 제거
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Recognize a Sentence            !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+define Delim                " " ;
+!define NormalizeDelim        " " @<- [" "|"    "]+ ; ! 탭 키도 지우기 위해서는 이것을 사용
+define NormalizeDelim       " " @<- " "+ ;
+define WPWithMark           %[%[ SingleWordPhrase %]%] ;
+define SentenceWithMark     WPWithMark [ Delim WPWithMark ]* ;
+define DeleteMarkUp         [ 0 <- %[%[ ] .o. [ 0 <- %]%] ] ;
+define DeleteMarkDown       [ %[%[ -> 0 ] .o. [ %]%] -> 0 ] ;
+define Sentence             DeleteMarkUp .o. SentenceWithMark .o. DeleteMarkDown .o. NormalizeDelim ;
+
+regex Sentence ;
+
+!save stack kor.stack               ! 만들어진 FST를 binary로 저장하는 방법
+!write att > "kor.fomaatt"          ! att 형식으로 파일을 저장하는 방법
+!invert net                         ! 표층형 -> 어휘형으로 바뀌기 위한 방법
+!write att > "korinvert.fomaatt"    ! 바뀌어진 FST를 att형식으로 저장하는 방법
+
+</code></pre>
+</body>
+</html>
