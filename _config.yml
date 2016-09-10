@@ -10,7 +10,7 @@ title:            Rouzeta
 tagline:          'Finite State-based Korean Morphological Analyzer'
 description:      'Finite State-based Korean Morphological Analyzer. Made by <a href="http://sangholee.com" target="_blank">Sangho Lee</a>'
 url:              http://rouzeta.com
-baseurl:          /blog
+baseurl:          /
 
 author:
   name:           'Sangho Lee'
