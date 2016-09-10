@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
  <title>Rouzeta</title>
- <link href="http://rouzeta.com/atom.xml" rel="self"/>
- <link href="http://rouzeta.com/"/>
- <updated>2016-09-11T03:24:17+09:00</updated>
- <id>http://rouzeta.com</id>
+ <link href="https://shleekr.github.io/atom.xml" rel="self"/>
+ <link href="https://shleekr.github.io/"/>
+ <updated>2016-09-11T03:27:03+09:00</updated>
+ <id>https://shleekr.github.io</id>
  <author>
    <name>Sangho Lee</name>
    <email></email>
@@ -14,9 +14,9 @@
  
  <entry>
    <title>유한 상태 기반의 한국어 형태소 분석기</title>
-   <link href="http://rouzeta.com/2016/06/30/introducing-rouzeta/"/>
+   <link href="https://shleekr.github.io/2016/06/30/introducing-rouzeta/"/>
    <updated>2016-06-30T00:00:00+09:00</updated>
-   <id>http://rouzeta.com/2016/06/30/introducing-rouzeta</id>
+   <id>https://shleekr.github.io/2016/06/30/introducing-rouzeta</id>
    <content type="html">&lt;p&gt;본 연구는 유한 상태 변환기 (finite state transducer) 기반의 한국어 형태소 
 분석기에 대한 연구이다. 이 연구의 최종 목표는 한국어 문장에서 나타날 수 있는 모든 심벌들의 
 열을 입력으로 받은 후 다른 종류의 정보처리 방법을 통하지 않고 오로지 상태 변환기를 통해서만
