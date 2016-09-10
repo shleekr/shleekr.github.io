@@ -8,7 +8,7 @@ title: 유한 상태 기반의 한국어 형태소 분석기
 형태소 분석 및 품사 태깅까지를 한번에 완료시키는 것이다.
 이를 위해서, 본 연구에서는 한국어 형태소 분석을 위한 여러가지 규칙들을 직접 기술하여
 한국어 형태소 분석 상태 변환기를 만들고, 이 변환기에 품사태깅에 필요한 확률을 부여하는
-방식으로 네트워크를 구성하였다. 
+방식으로 변환기를 구성하였다. 
 
 ### 서론
 
@@ -33,7 +33,7 @@ title: 유한 상태 기반의 한국어 형태소 분석기
 
 형태소 분석을 하는 방법들로 가장 흔하게 사용되는 방법은,
 트라이 (trie)로 된 사전을 가지고 있는 상태에서
-입력 어절에 대해서 좌에서 우로 트라이를 찾아가면서 가능한 모든 형태소들을 찾고,
+입력 어절에 대해서 좌에서 우, 혹은 우에서 좌로 트라이를 찾아가면서 가능한 모든 형태소들을 찾고,
 이들을 격자 (lattice)로 표현시켜서 네트워크를 구성하는 방식이다.
 
 !['나는'의 형태소 분석 과정](public/images/nanun.jpg) 
@@ -45,8 +45,8 @@ title: 유한 상태 기반의 한국어 형태소 분석기
 높기때문에 속도가 매우 중요한데 이를 위해서 음절 정보를 이용한다거나<a href='#3'>[3]</a>,
 부분 어절에 대한 기분석 사전을 이용하는 등 다양한 아이디어들이 존재한다<a href='#4'>[4]</a>.
 
-본 사이트에서는 Finite State Transducer를 이용하여 한국어 형태소 분석기 Rouzeta를 소개한다.
-Rouzeta는 한국어의 모든 규칙/불규칙 현상을 기술하였으며, 분석기를
+본 사이트에서는 Finite State Transducer를 이용하여 만든 한국어 형태소 분석기 Rouzeta를 소개한다.
+Rouzeta는 한국어의 모든 규칙/불규칙 현상을 처리할 수 있으며, 분석기를
 [foma](http://foma.googlecode.com)와 [xerox finite state tools](http://web.stanford.edu/~laurik/fsmbook/home.html)에서
 모두 테스팅해 보았다.
 
@@ -55,19 +55,18 @@ Rouzeta는 한국어의 모든 규칙/불규칙 현상을 기술하였으며, �
 유한 상태 형태론에 대해서는 [K. R. Beesley](https://www.linkedin.com/in/krbeesley)와
 [L. Karttunen](http://web.stanford.edu/~laurik)이 저술한 
 [Finite State Morphology](https://www.amazon.com/Finite-State-Morphology-Kenneth-Beesley/dp/1575864347)를
-읽어보기 바란다.
-다만 이 장에서 간략하게 설명하자면, 
+읽어보기 바란다. 이 장에서는 간략하게 설명하겠다.
 우리가 흔히 알고 있는 유한 상태 머신 (Finite State Machine)은 입력 심벌, 그리고 노드에서 다른 노드로 
 이동할 때 해당 입력 심벌을 소비하면서 이동하는 엣지로 구성되어 있으며,
 모든 심벌들이 소비되었을 때 특정 상태에 도달하게 되고 그 상태 (노드)가 단말 노드일 경우
-미리 부여된 노드의 의미로 심벌 스트링을 해석하는 것이다.
+미리 부여된 노드의 의미로 심벌 스트링을 해석한다.
 한편, 유한 상태 변환기 [Finite State Transducer](https://en.wikipedia.org/wiki/Finite-state_transducer)는
 입력 심벌 뿐만 아니라 출력 심벌도 정의가 되고, 노드에서 노드로 점프할 때 입력 심벌을 소비하면서
 동시에 출력 심벌이 출력되는 것이다.
 
-여기에서 중요한 점은, 이렇게 입력이 특정 심벌들의 열(sequence)이고 프로세싱을 거친 후에
-특정 심벌들의 열(sequence)로 나오는 경우에 해당하는 프로그램은 매우 많다는 것이다.
-예를 들어, 영어 문장을 입력으로 받아 한국어 문장을 출력하는 기계번역기 (Machine Translation)이라든가,
+여기에서 중요한 점은, 이렇게 임의의 시스템 입력이 특정 심벌들 열(sequence)이며
+프로세싱을 거친 후에 특정 심벌들 열(sequence)로 나오는 경우에 해당하는 프로그램들이 많다는 것이다.
+예를 들어, 영어 문장을 입력으로 받아 한국어 문장을 출력하는 기계번역기 (Machine Translation)라든가,
 문장을 입력으로 받아 자동으로 그 문장을 교정하는 문장 교정기 (Automatic Speller)라든가,
 심지어 발음 열을 입력으로 받아서 문장을 출력하는 것도 음성 인식기 개발에서 사용될 수 있다.
 
@@ -77,14 +76,15 @@ Rouzeta는 한국어의 모든 규칙/불규칙 현상을 기술하였으며, �
 ![Rosetta:Rouzeta finite state transducer 예](public/images/rouzeta.jpg) 
 
 위 그림에서 입력과 출력이 동일할 경우는 심벌이 하나만 적혀 있다 (R, o, e, t, a의 경우).
-한편 <0:u>는 입력이 없을 때 u를 출력한다는 의미이고, <t:0>는 입력이 t인데 출력을 하지 않는다는 뜻이다.
+한편 <0:u>는 입력이 없을 때 u를 출력한다는 의미이고, < t:0>는 입력이 t인데 출력을 하지 않는다는 뜻이다.
 (그림에서 0은 오토마타 이론에서 epsilon을 의미하는 것으로 no-symbol이다)
 위와 같이 함으로써 Rosetta를 입력으로 넣으면, Rouzeta가 출력되게 된다.
 
 그렇다면, 이러한 유한 상태 변환기가 어떻게 형태소 분석기와 관계가 있다는 뜻인가?
+형태소 분석이란 말은 말 그대로 '분석'을 의미하는데, 이것을 분석 심벌들 출력이라고 보고,
 '고마워'라는 표층형과 이를 이루는 어휘형 '고맙 [ㅂ 불규칙] [용언]', '어 [어미]'간의 
 관계를 유한 상태 변환기로 표현한다는 것이다. 즉, Trie와 같은 자료구조를 이용하면서
-프로그램 내부에서 loop를 이용하여 후보를 사전에서 찾어보면서 분석 결과를 관리하는
+프로그램 내부에서 loop를 이용하여 후보를 사전에서 찾아보면서 분석 결과를 관리하는
 기존의 모델과 비교할 때, 이 방법은 어휘형과 표층형을 입력/출력 스트링의 관계로 보고
 각 스트링간의 관계를 기술하고 이를 컴파일 (compile)하여 거대한 유한 상태 변환기를 
 만들면 이것이 곧 형태소 분석기가 된다.
@@ -122,7 +122,7 @@ Rouzeta는 한국어의 모든 규칙/불규칙 현상을 기술하였으며, �
 
 > A -> B / C _ D
 
-이를 유한 상태 변환기로 표현할 수 있다. 다음은 [foma](http://foma.googlecode.com)로 컴파일해 본 결과이다. 
+이를 유한 상태 변환기로 표현할 수 있는데, 다음은 [foma](http://foma.googlecode.com)로 컴파일해 본 결과이다. 
 
 <pre>
 shlee@shlee:~$ foma
@@ -152,7 +152,7 @@ foma[1]: <em><font color="red">view</font></em>
 그렇다면, 한국어 형태소 분석기를 위한 규칙 중 하나를 기술해 보자.
 'ㄷ' 불규칙은 어간의 'ㄷ' 받침이 모음으로 시작하는 어미 앞에서 'ㄹ' 받침으로 바뀌는 활용으로
 동사에만 있고 형용사에는 없다. 예를 들어, '깨닫 [ㄷ 불규칙] [용언] 아 [어미]'는
-'깨달아'로 바뀌게 된다. 참고로 '믿 [용언] 어 [어미]'는 '믿어'로 바뀌는 규칙 활용을 한다.
+'깨달아'로 바뀌게 된지만 '믿 [용언] 어 [어미]'는 '믿어'로 바뀌는 규칙 활용을 한다.
 만약, 하나의 음절을 초성, 중성, 종성으로 모두 나누어 처리하게 만들 수 있다면,
 종성 'ㄷ'이 오른쪽에 '[ㄷ 불규칙] [용언] [초성 ㅇ]'으로 시작할 때 'ㄹ'로 바뀌게 만들면
 될 것이다. 이를 간단하게 테스팅해 보면 다음과 같다.
@@ -167,13 +167,15 @@ foma[1]: <em><font color="red">view</font></em>
 
 ![ㄷ 불규칙 현상의 규칙](public/images/d_irr.jpg) 
 
+위에서 '/irrd'는 '[ㄷ 불규칙]'을 의미하는 심벌이고, '/vb'는 '[용언]'을 의미하는 심벌이다.
+
 ### Composition
 
 한국어 형태소 분석을 위한 여러 현상들, 'ㅂ' 불규칙, 'ㄷ' 불규칙, 그리고 모음 조화 현상 등
-각종 현상들이 어떻게 하나의 유한 상태 변환기로 나타낼 수 있을까?
+각종 현상들이 어떻게 하나의 유한 상태 변환기로 표현될 수 있을까?
 또한 우리는 입력을 utf-8 한글 음절을 기본 단위로 한다고 했는데, 각종 음운 현상들은
 모두 자소 수준에서 이루어져야 한다. 입력은 음절 심벌들이고, 음운 처리는 자소 심벌들이,
-다시 결과를 표현하는 것은 음절 심벌들을 표현하기 위해 어떻게 해야 하는가?
+그리고 다시 결과를 표현할 때는 음절 심벌들로 표현되기 위해 어떻게 해야 하는가?
 이 모든 것들이 유한 상태 변환기의 특징인 composition operator를 이용해서 처리할 수 있다.
 
 두 개의 유한 상태 변환기 A, B를 정의하자. 그리고 A .o. B ( A composition B)를 수행한다.
@@ -208,12 +210,15 @@ foma[1]: <em><font color="red">view</font></em>
 ![composition](public/images/one.jpg) 
 
 위와 같은 방법을 이용해서, 하나의 음절을 자소 단위로 나누고, 자소 수준에서의 각종
-규칙들을 처리한 후, 다시 자소 단위를 음절로 합쳐서 형태소 분석을 수행한다.
+규칙들을 처리한 후, 다시 자소 단위를 음절로 합치면, 
+내부적으로는 자소 단위로 규칙들이 적용되지만, 결과적으로 만들어지는 최종 변환기는
+자소 심벌이 없는 변환기가 만들어진다.
+
 통상적으로 형태소 분석기는 '분석'이라는 말 그대로 입력이 표층형, 출력이 어휘형으로
-나오게 하는데 반해, 유한 상태 변환기로 분석기를 만들 때는 입력이 어휘형, 
+나오게 만드는데 반면, 유한 상태 변환기로 분석기를 만들 때는 입력이 어휘형, 
 출력이 표층형이 되게 규칙을 기술한 후, 최종 변환기를 inverse시켜서 형태소 분석을 수행한다.
 
-구현된 형태소 분석기에서 각종 규칙을 composition하여 AlternationRules로 정의하는 코드 부분은
+구현된 형태소 분석기에서 각종 규칙을 composition하여 ARules (Alternation Rules)로 정의하는 코드 부분은
 아래와 같다. (실제 코드에서는 좀 더 긴 이름으로 정의되어 있는데
 화면에 잘 보이게 하기 위해서 변환기 이름을 줄였습니다.)
 
@@ -245,13 +250,12 @@ define ARules NPFilter    .o. ! 체언 + 조사 규칙 적용 : 사과는/사람
 ### 코퍼스 및 품사 정의
 
 유한 상태 형태소 분석기 (Rouzeta)는 [세종 코퍼스](http://ithub.korean.go.kr/user/guide/corpus/guide1.do)를
-처리하여 만들었다. 한편, 세종 코퍼스에서 사용하고 있는 품사가 덜 자세하게 되어 있는 경향이 있어서,
+처리하여 만들었다. 한편, 세종 코퍼스에서 사용하고 있는 품사가 덜 세분되어있는 경향이 있어서,
 본 연구에서는 본인이 계속 사용해 오던 품사 셋으로 코퍼스를 수정하였다.
-태깅되어 있는 코퍼스를 변환하는 것이 쉽지 않았는데, 특히나 세종 코퍼스에 오류가 너무  
-많았으며, 이를 패턴별로 프로그램을 작성하여 자동으로 수정도 하였고, 오류가 몇 개 되지 않았을 때에는 
-직접 수정하였다. 
+태깅되어 있는 코퍼스를 변환하는 것이 쉽지 않았는데, 특히나 세종 코퍼스에 오류가 너무 많았으며,
+이를 패턴별로 프로그램을 작성하여 자동으로 수정도 하였고, 오류가 몇 개 되지 않았을 때에는 직접 수정하였다. 
 수정된 코퍼스를 오픈할 수 있는지, 현 시점에서 최초 세종 코퍼스의 라이센스를 검색해 보았으나 찾을 수 없어서
-현 시점에서는 수정된 코퍼스를 올리지 않겠다. (이 후 좀 더 알아본 후에 오픈할 수 있으면 오픈하겠습니다.)
+현 시점에서는 수정된 코퍼스를 올리지 않겠다.
 
 구현된 형태소 분석기에서 사용한 품사 리스트는 아래와 같다.
 품사 심벌을 알파벳 두 글자로 표현하고, 첫번째 알파벳은 대분류 의미이고, 두번째 알파벳은 소분류 의미이다.
@@ -635,8 +639,8 @@ Rouzeta는 두개의 폴더로 되어 있으며, Rouzeta 폴더에서는 형태�
 
 $$ t\_{1..n} = arg max\_{t\_{1..n}} \prod P(w\_{i}|t\_{i}) P(t\_{i}|t\_{i-1}) $$
 
-본 실험은 단순히 형태소열이 발생할 확률이 최대인 열을 찾는데,
-그 이유는 특별한 의미가 있다기보다 모델 사이즈가 작기 때문에 공개하는 것이다.
+본 사이트에서는 단순히 형태소열이 발생할 확률이 최대인 열을 찾는 모델을 공개한다.
+이 이유는 특별한 의미가 있다기보다 모델 사이즈가 작기 때문이다.
 
 $$ t\_{1..n} = arg max\_{t\_{1..n}} \prod P(w\_{i},t\_{i}) $$
 
@@ -696,9 +700,9 @@ Type "help" to list all commands available.
 Type "help <topic>" or help "<operator>" for further help.
 foma[0]: <em><font color="red">source kormoran.script</font></em>
 Opening file 'kormoran.script'.
-Root...36, acLexicon...124, acNext...12, adLexicon...5278, adNext..
-aiLexicon...4, aiNext...8, amLexicon...6, amNext...3, diLexicon...8, 
-diNext...8, dmLexicon...8, dmNext...11, dnLexicon...185, dnNext...12,
+Root...36, acLexicon...124, acNext...12, adLexicon...5278, adNex
+aiLexicon...4, aiNext...8, amLexicon...6, amNext...3, diLexicon.., 
+diNext...8, dmLexicon...8, dmNext...11, dnLexicon...185, dnNext..,
 duLexicon...17, duNext...5, ecLexicon...1366, ecNext...10, 
 ...
 ...
@@ -844,12 +848,12 @@ defined ChangeHaji: 861 bytes. 10 states, 21 arcs, Cyclic.
 defined ReducedWords: 6.8 kB. 45 states, 371 arcs, Cyclic.
 defined AbnormalSequence: 1.0 kB. 21 states, 27 arcs, 8 paths.
 defined FilterOut: 5.6 kB. 20 states, 316 arcs, Cyclic.
-defined AlternationRules: 26.7 MB. 360257 states, 1750440 arcs, Cyc..
-defined SingleWordPhrase: 42.9 MB. 127415 states, 2797946 arcs, Cyc..
+defined AlternationRules: 26.7 MB. 360257 states, 1750440 arcs, Cy
+defined SingleWordPhrase: 42.9 MB. 127415 states, 2797946 arcs, Cy
 defined Delim: 202 bytes. 2 states, 1 arc, 1 path.
 defined NormalizeDelim: 364 bytes. 2 states, 4 arcs, Cyclic.
 defined WPWithMark: 42.9 MB. 127417 states, 2798456 arcs, Cyclic.
-defined SentenceWithMark: 42.9 MB. 127417 states, 2798457 arcs, Cyc..
+defined SentenceWithMark: 42.9 MB. 127417 states, 2798457 arcs, Cy
 defined DeleteMarkUp: 376 bytes. 1 state, 3 arcs, Cyclic.
 defined DeleteMarkDown: 376 bytes. 1 state, 3 arcs, Cyclic.
 defined Sentence: 43.0 MB. 127416 states, 2806708 arcs, Cyclic.
@@ -924,21 +928,26 @@ foma[1]: <em><font color="red">exit</font></em>
 
 (위 실행예는 실제 실행 예보다 많이 줄여서 화면에 보여준 것입니다.)
 위 분석 결과를 보면, 생각보다 많은 분석 결과가 나오는 것을 볼 수 있는데,
-이는 세종 코퍼스에서 임의의 두 품사가 붙여서 사용되는 경우,
-형태소 천이 네트워크에서 붙여서 표현하였기 때문이다.
+이는 세종 코퍼스에서 임의의 두 품사가 공백 없이 사용되는 경우,
+형태소 천이 네트워크에서 붙여져 표현되기 때문이다.
 본인의 생각은, 매우 고빈도로 과분석되어 나오는 경우를 찾아서
 이러한 결과가 나오지 않도록 필터를 설계한 후 composition하면
 좀 더 나은 형태소 분석 결과가 나올 것으로 예측한다.
+
+최종적으로 만들어진 한국어 형태소 분석 FST의 크기를 보면,
+상태의 개수는 127,416개, 상태와 상태를 잇는 아크(arc)의 개수는 
+2,806,708개이다. 총 사용된 형태소의 수는 대략 29만개이다.
+
 
 ## Tagger
 
 품사 태깅이라는 것은 주어진 문장에 대해서 가장 맞는 형태소 열을 구하는 문제로 
 볼 수 있다. 나는 20년 전에 석사 학위 논문으로 
-[미등록어를 고려한 한국어 품사 태깅 시스템 구현](http://sangholee.com/papers/msthesis.tar.gz)를
+[미등록어를 고려한 한국어 품사 태깅 시스템 구현](http://zincfunc.cafe24.com/homepage/papers/msthesis.tar.gz)를
 구현한 적이 있는데, 그 당시에는 확률에 의한 방법이 가장 합리적이라는 생각을
 했었다. 하지만, Emmanuel Roche와 Yves Schabes가 쓴
 [Deterministic Part-of-speech tagging with Finite-state Transducers](http://anthology.aclweb.org/J/J95/J95-2004.pdf)를
-읽어보고 좀 더 효율적인 방법론이 있구나라는 생각이 들었고,
+읽어보고 규칙 기반 방법론에 대해 관심을 가지게 되었고,
 Christer Samuelsson이 쓴 [Inducing Constraint Grammars](http://arxiv.org/pdf/cmp-lg/9607002.pdf)를 읽고,
 인간이 추론하는 방법에 근접한 방식으로 언어처리 모듈을 작성할 수 있다는 생각이 들었다.
 
@@ -949,15 +958,15 @@ Christer Samuelsson이 쓴 [Inducing Constraint Grammars](http://arxiv.org/pdf/c
 원래의 FST에서 Constraint FST를 뺀 최종 FST를 구하고자 했다.
 (이러한 방법론에 대해서 알고 싶은 사람은 [Mehryar Mohri](http://cs.nyu.edu/cs/faculty/mohri/)가 쓴
 [Local Grammar Algorithms](http://www.cs.nyu.edu/~mohri/pub/kos.pdf)를 읽어보기 바란다.)
-마지막으로 구한 FST에는 아주 간단한 unigram 확률값 (\\( p(w\_{i},t\_{i}) \\))만을 부여햐여
+마지막으로 구한 FST에는 아주 간단한 unigram 확률값 (\\( p(w\_{i},t\_{i}) \\))만을 부여하여
 남아 있는 ambiguity를 해소하고자 했다.
 
 하지만, 이번 과제를 두 달에 걸쳐서 진행하였는데, (세종 코퍼스를 정제하는데 3주 정도가 걸리고 말았다.)
 앞으로 더 이 과제를 진행할 시간이 있을 것 같지 않아서 일단 이 정도 수준에서 결과물을
-정리하고자 했다. 그러다보니 형태소 분석 FST에 단순히 unigram 확률만 부여하게 되었다.
+정리하고자 한다. 그러다보니 형태소 분석 FST에 단순히 unigram 확률만 부여하게 되었다.
 
 위에서 구한 Rouzeta 형태소 분석기에 unigram 확률을 부여하는 것은 단순한 일이다.
-세종 코퍼스로부터 unigram 확률을 추출하고, 아래와 같은 unigram FST를 우선 만든다. 
+세종 코퍼스로부터 unigram 확률을 추출하고, 아래와 같은 형식으로 unigram FST를 만든다. 
 즉, 글자 심벌에서는 0을 부여하고 품사 심벌이 나오는 곳에 \\( -log p(w\_{i},t\_{i}) \\)를 
 부여한다.
 
@@ -983,7 +992,7 @@ Tagger WFST (Weighted Finite State Transducer)가 만들어진다.)
 아래는 Tagger WFST를 구동시킨 예이다.
 
 <pre><code>
-shlee@shlee: ~/KFST/Tagger$ cat testme.txt
+shlee@shlee: ~/KFST/Tagger$ <em><font color="red">cat testme.txt</font></em>
 나 는 \<space\> 학 교 에 서 \<space\> 공 부 합 니 다 .
 선 을 \<space\> 그 어 \<space\> 버 렸 다 .
 고 마 웠 다 .
@@ -997,7 +1006,7 @@ shlee@shlee: ~/KFST/Tagger$ cat testme.txt
 사 괄 \<space\> 먹 겠 다 .
 향 약 은 \<space\> 향 촌 의 \<space\> 교 육 과 \<space\> 경 제 를 \<space\> 관 장 해 \<space\> 서 원 을 \<space\> 운 영 하 면 서 \<space\> 중 앙 \<space\> 정 부 \<space\> 등 용 문 인 \<space\> 대 과 \<space\> 응 시 자 격 을 \<space\> 부 여 하 는 \<space\> 향 시 를 \<space\> 주 관 하 고 \<space\> 흉 년 이 \<space\> 들 면 \<space\> 곡 식 을 \<space\> 나 누 는 \<space\> 상 호 부 조 와 \<space\> 작 황 에 \<space\> 따 른 \<space\> 소 작 료 \<space\> 연 동 적 용 을 \<space\> 정 하 는 가 \<space\> 하 면 \<space\> 풍 속 사 범 에 \<space\> 대 해 \<space\> 형 벌 을 \<space\> 가 하 는 \<space\> 사 법 부 \<space\> 역 할 까 지 \<space\> 담 당 했 었 다 .
 
-shlee@shlee: ~/KFST/Tagger$ cat testme.txt | ./kyfd koreanuni.xml
+shlee@shlee: ~/KFST/Tagger$ <em><font color="red">cat testme.txt | ./kyfd koreanuni.xml</font></em>
 -- Started Kyfd Decoder --
 Loaded configuration, initializing decoder...
 Loading fst korfinaluni.fst... 
@@ -1031,9 +1040,11 @@ Done decoding, took 0 seconds
 크게 필요 없는 context에서도 bigram 확률을 부여하는 것을 좋아하지 않는다.
 그래서 bigram 확률을 부여했을 때, unigram 확률 부여 방식과의 차이만 보여주고자
 아래에 그 결과를 넣는다.
+( 이 사이트에서는 bigram WFST의 크기가 너무 커서 공개하지 않는다.
+  아래는 내 컴퓨터에서 실험한 결과를 캡쳐해서 보여준 것 뿐이다. )
 
 <pre><code>
-shlee@shlee-MacBookPro:~/FST/KFST.1.0/att2$ cat testme.txt | ./kyfd koreanbi.xml
+shlee@shlee:~/FST/KFST.1.0/att2$ <em><font color="red">cat testme.txt | ./kyfd koreanbi.xml</font></em>
 -- Started Kyfd Decoder --
 Loaded configuration, initializing decoder...
 Loading fst korinvertwordbifinal.fst... 
@@ -1081,19 +1092,20 @@ FST를 이용해서 형태소 분석, 품사 태깅, 파싱, 의미 분석 등 �
 아직까지 공개되지 않았다는 것을 알게 되었으며, 그러한 점에서 이번 연구는 의미가 있다고 본다.
 여기에서 공개된 규칙은 직접 하나 하나 작성한 것이고,
 사전은 세종 코퍼스에서 추출하였으며, 용언에 필요한 불규칙 코드는 20년 전에 공개했던
-[KTS](http://sangholee.com/programs/kts.tar.gz)에서, 인터넷 검색을 통해서,
+[KTS](http://zincfunc.cafe24.com/homepage/programs/kts.tar.gz)에서, 인터넷 검색을 통해서,
 그리고 실험하면서 오류를 발견하면 직접 코드를 넣기도 했다.
 한자의 경우도 인터넷에 공개된 한자 리스트들을 모았고 세종 코퍼스에서 나오는 한자와 합쳐서 구축하였다.
 Rouzeta 형태소 분석기를 사용하는데 (덧붙여 혹시라도 품사 태거를 사용하는 것 포함해서)
-가능한한 라이센스적으로 문제가 없도록 하였으므로, 한국어 형태소 분석기가 필요한 분이거나,
+가능한한 라이센스에 문제가 없도록 하였으므로, 한국어 형태소 분석기가 필요한 분이거나,
 혹은 한국어 어휘 형태론을 연구하시는 분에게 도움이 되었으면 한다.
 
-(이 결과물의 라이센스는 가장 느슨한 라이센스인 [MIT 허가서](https://ko.wikipedia.org/wiki/MIT_허가서)에 따릅니다.
+(이 결과물의 라이센스는 굳이 따지자면 가장 느슨한 라이센스인 [MIT 허가서](https://ko.wikipedia.org/wiki/MIT_허가서)에
+따릅니다.
 즉 무상으로 제한없이 취급해도 좋고, 대신 저작권자는 소프트웨어에 관해서 아무런 책임을 지지 않습니다.
-혹시 라이센스에 문제가 있다거나 제가 올린 것에 문제가 있다면 알려주시면 감사하겠습니다.
+혹시 제가 이렇게 공개하는 것 자체가 라이센스에 문제가 있다면 알려주시면 감사하겠습니다.
 참고로 본 글을 작성한 이후로 다시 연구할 기회가 많지 않을 것 같고,
 이 형태소 분석기를 수정할 기회도 많지 않을 것 같습니다. 
-그러므로 분석기를 더 수정해달라거나 하는 요구 사항은 받지 않을 계획입니다.)
+그러므로 분석기를 더 수정해달라거나 하는 요구 사항은 받지 않겠습니다.)
 
 ### 참고문헌
 
