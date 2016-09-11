@@ -9,7 +9,7 @@ state-based Korean morphological analyzer <em>Rouzeta</em>.
 I implemented the analyzer by using the open source finite state compiler <em>foma</em> toolkit,
 and built the weighted finite state-based Korean part-of-speech tagger by composing
 <em>Rouzeta FST</em> and <em>unigram WFST (weighted FST)</em>.
-The Korean morpheme alteration rules were written from the scratch and
+The Korean morpheme alteration rules were written from scratch and
 the entries in the <em>Rouzeta</em> dictionary were extracted from <em>Sejong Corpus</em>.
 <em>Rouzeta</em> is an open source program and I hope this analyzer could help
 researchers study finite state-based Korean morphology.

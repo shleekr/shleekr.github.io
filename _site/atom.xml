@@ -4,7 +4,7 @@
  <title>Rouzeta</title>
  <link href="https://shleekr.github.io/atom.xml" rel="self"/>
  <link href="https://shleekr.github.io/"/>
- <updated>2016-09-11T12:49:22+09:00</updated>
+ <updated>2016-09-11T15:24:51+09:00</updated>
  <id>https://shleekr.github.io</id>
  <author>
    <name>Sangho Lee</name>
@@ -23,7 +23,7 @@ state-based Korean morphological analyzer &lt;em&gt;Rouzeta&lt;/em&gt;.
 I implemented the analyzer by using the open source finite state compiler &lt;em&gt;foma&lt;/em&gt; toolkit,
 and built the weighted finite state-based Korean part-of-speech tagger by composing
 &lt;em&gt;Rouzeta FST&lt;/em&gt; and &lt;em&gt;unigram WFST (weighted FST)&lt;/em&gt;.
-The Korean morpheme alteration rules were written from the scratch and
+The Korean morpheme alteration rules were written from scratch and
 the entries in the &lt;em&gt;Rouzeta&lt;/em&gt; dictionary were extracted from &lt;em&gt;Sejong Corpus&lt;/em&gt;.
 &lt;em&gt;Rouzeta&lt;/em&gt; is an open source program and I hope this analyzer could help
 researchers study finite state-based Korean morphology.
