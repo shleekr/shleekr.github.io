@@ -637,7 +637,7 @@ Rouzeta는 두개의 폴더로 되어 있으며, Rouzeta 폴더에서는 형태�
 
 통상 확률 태깅 방법이라고 말하면 아래의 bigram 수식을 의미하는데,
 
-<span> <img src="http://www.sciweavers.org/tex2img.php?eq=t_%7B1..n%7D%20%3D%20arg%20max_%7Bt_%7B1..n%7D%7D%20%5Cprod%20P%28w_%7Bi%7D%7Ct_%7Bi%7D%29%20P%28t_%7Bi%7D%7Ct_%7Bi-1%7D%29&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0" align="center" border="0" alt="t_{1..n} = arg max_{t_{1..n}} \prod P(w_{i}|t_{i}) P(t_{i}|t_{i-1})" width="311" height="28" /> </span>
+<img src="http://www.sciweavers.org/tex2img.php?eq=t_%7B1..n%7D%20%3D%20arg%20max_%7Bt_%7B1..n%7D%7D%20%5Cprod%20P%28w_%7Bi%7D%7Ct_%7Bi%7D%29%20P%28t_%7Bi%7D%7Ct_%7Bi-1%7D%29&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0" align="center" border="0" alt="t_{1..n} = arg max_{t_{1..n}} \prod P(w_{i}|t_{i}) P(t_{i}|t_{i-1})" width="311" height="28" />
 
 본 사이트에서는 단순히 형태소열이 발생할 확률이 최대인 열을 찾는 모델을 공개한다.
 이 이유는 특별한 의미가 있다기보다 모델 사이즈가 작기 때문이다.
