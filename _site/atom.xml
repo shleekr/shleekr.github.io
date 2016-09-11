@@ -4,7 +4,7 @@
  <title>Rouzeta</title>
  <link href="https://shleekr.github.io/atom.xml" rel="self"/>
  <link href="https://shleekr.github.io/"/>
- <updated>2016-09-11T11:41:06+09:00</updated>
+ <updated>2016-09-11T12:44:50+09:00</updated>
  <id>https://shleekr.github.io</id>
  <author>
    <name>Sangho Lee</name>
@@ -17,7 +17,19 @@
    <link href="https://shleekr.github.io/2016/06/30/introducing-rouzeta/"/>
    <updated>2016-06-30T00:00:00+09:00</updated>
    <id>https://shleekr.github.io/2016/06/30/introducing-rouzeta</id>
-   <content type="html">&lt;p&gt;본 연구는 유한 상태 변환기 (finite state transducer) 기반의 한국어 형태소 
+   <content type="html">&lt;div class=&quot;message&quot;&gt;
+&lt;bold&gt; &lt;font color=&quot;black&quot;&gt; Abstract &lt;/font&gt; &lt;/bold&gt; This study aims to make a finite 
+state-based Korean morphological analyzer &lt;em&gt;Rouzeta&lt;/em&gt;.
+I implemented the analyzer by using the open source finite state compiler &lt;em&gt;foma&lt;/em&gt; toolkit,
+and built the weighted finite state-based Korean part-of-speech tagger by composing
+&lt;em&gt;Rouzeta FST&lt;/em&gt; and &lt;em&gt;unigram WFST (weighted FST)&lt;/em&gt;.
+The Korean morpheme alteration rules were written from the scratch and
+the entries in the &lt;em&gt;Rouzeta&lt;/em&gt; dictionary were extracted from &lt;em&gt;Sejong Corpus&lt;/em&gt;.
+&lt;em&gt;Rouzeta&lt;/em&gt; is an open source program and I hope this analyzer could help
+researchers study finite state-based Korean morphology.
+&lt;/div&gt;
+
+&lt;p&gt;본 연구는 유한 상태 변환기 (finite state transducer) 기반의 한국어 형태소 
 분석기에 대한 연구이다. 이 연구의 최종 목표는 한국어 문장에서 나타날 수 있는 모든 심벌들의 
 열을 입력으로 받은 후 다른 종류의 정보처리 방법을 통하지 않고 오로지 상태 변환기를 통해서만
 형태소 분석 및 품사 태깅까지를 한번에 완료시키는 것이다.

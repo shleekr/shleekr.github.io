@@ -99,7 +99,19 @@
 
     <span class="post-date">30 Jun 2016</span>
 
-    <p>본 연구는 유한 상태 변환기 (finite state transducer) 기반의 한국어 형태소 
+    <div class="message">
+<bold> <font color="black"> Abstract </font> </bold> This study aims to make a finite 
+state-based Korean morphological analyzer <em>Rouzeta</em>.
+I implemented the analyzer by using the open source finite state compiler <em>foma</em> toolkit,
+and built the weighted finite state-based Korean part-of-speech tagger by composing
+<em>Rouzeta FST</em> and <em>unigram WFST (weighted FST)</em>.
+The Korean morpheme alteration rules were written from the scratch and
+the entries in the <em>Rouzeta</em> dictionary were extracted from <em>Sejong Corpus</em>.
+<em>Rouzeta</em> is an open source program and I hope this analyzer could help
+researchers study finite state-based Korean morphology.
+</div>
+
+<p>본 연구는 유한 상태 변환기 (finite state transducer) 기반의 한국어 형태소 
 분석기에 대한 연구이다. 이 연구의 최종 목표는 한국어 문장에서 나타날 수 있는 모든 심벌들의 
 열을 입력으로 받은 후 다른 종류의 정보처리 방법을 통하지 않고 오로지 상태 변환기를 통해서만
 형태소 분석 및 품사 태깅까지를 한번에 완료시키는 것이다.
