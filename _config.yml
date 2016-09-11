@@ -13,6 +13,7 @@ url:              https://shleekr.github.io
 baseurl:          https://shleekr.github.io
 disqus:           yes
 disqus_id:        shleekr-github-io
+org_site:         https://shleekr.github.io
 comments:         true
 
 author:
