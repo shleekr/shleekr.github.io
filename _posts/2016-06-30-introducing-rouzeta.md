@@ -637,12 +637,12 @@ Rouzeta는 두개의 폴더로 되어 있으며, Rouzeta 폴더에서는 형태�
 
 통상 확률 태깅 방법이라고 말하면 아래의 bigram 수식을 의미하는데,
 
-$$ t\_{1..n} = arg max\_{t\_{1..n}} \prod P(w\_{i}|t\_{i}) P(t\_{i}|t\_{i-1}) $$
+<span> <img src="http://www.sciweavers.org/tex2img.php?eq=t_%7B1..n%7D%20%3D%20arg%20max_%7Bt_%7B1..n%7D%7D%20%5Cprod%20P%28w_%7Bi%7D%7Ct_%7Bi%7D%29%20P%28t_%7Bi%7D%7Ct_%7Bi-1%7D%29&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0" align="center" border="0" alt="t_{1..n} = arg max_{t_{1..n}} \prod P(w_{i}|t_{i}) P(t_{i}|t_{i-1})" width="311" height="28" /> </span>
 
 본 사이트에서는 단순히 형태소열이 발생할 확률이 최대인 열을 찾는 모델을 공개한다.
 이 이유는 특별한 의미가 있다기보다 모델 사이즈가 작기 때문이다.
 
-$$ t\_{1..n} = arg max\_{t\_{1..n}} \prod P(w\_{i},t\_{i}) $$
+<img src="http://www.sciweavers.org/tex2img.php?eq=t_%7B1..n%7D%20%3D%20arg%20max_%7Bt_%7B1..n%7D%7D%20%5Cprod%20P%28w_%7Bi%7D%2Ct_%7Bi%7D%29&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0" align="center" border="0" alt="t_{1..n} = arg max_{t_{1..n}} \prod P(w_{i},t_{i})" width="244" height="28" />
 
 FST를 만든 상태에서 가중치를 추가하는 것은 실제 FST 자체를 변경시키지 않는데,
 bigram FST를 위해 품사의 천이 값을 모든 FST에 추가하게 되면 FST의 상태 수가 
@@ -661,8 +661,8 @@ shlee@shlee:~/KFST/Rouzeta$ ls
 korean.lexc  kormoran.script  morphrules.foma  splithangul.foma  
 </code></pre>
 
-[korean.lexc](public/data/korean.lexc.html)는 형태소 사전과 각 형태소들의 접속 네트워크가 있는
-사전이고 (file 크기가 약 6 Mbyte이므로 주의 바람), 
+[korean.lexc](public/data/korean.lexc.html)는 형태소들과 각 형태소들의 접속 네트워크가 있는
+사전이고 (file 크기가 약 6 Mbyte이므로 로딩하는데 시간이 많이 걸린다. 주의 바람), 
 [morphrules.foma](public/data/morphrules.foma.html)는 어휘형과 표층형간의 규칙이
 적혀 있는 룰 파일이라고 볼 수 있다. [splithangul.foma](public/data/splithangul.foma.html)는 
 utf-8 한글 음절을 자소로 분리하는 규칙을 가지고 있으며, 최종적으로 
@@ -958,7 +958,7 @@ Christer Samuelsson이 쓴 [Inducing Constraint Grammars](http://arxiv.org/pdf/c
 원래의 FST에서 Constraint FST를 뺀 최종 FST를 구하고자 했다.
 (이러한 방법론에 대해서 알고 싶은 사람은 [Mehryar Mohri](http://cs.nyu.edu/cs/faculty/mohri/)가 쓴
 [Local Grammar Algorithms](http://www.cs.nyu.edu/~mohri/pub/kos.pdf)를 읽어보기 바란다.)
-마지막으로 구한 FST에는 아주 간단한 unigram 확률값 (\\( p(w\_{i},t\_{i}) \\))만을 부여하여
+마지막으로 구한 FST에는 아주 간단한 unigram 확률값 <em> P(w<sub>i</sub>, t<sub>i</sub>) </em>만을 부여하여
 남아 있는 ambiguity를 해소하고자 했다.
 
 하지만, 이번 과제를 두 달에 걸쳐서 진행하였는데, (세종 코퍼스를 정제하는데 3주 정도가 걸리고 말았다.)
@@ -967,8 +967,7 @@ Christer Samuelsson이 쓴 [Inducing Constraint Grammars](http://arxiv.org/pdf/c
 
 위에서 구한 Rouzeta 형태소 분석기에 unigram 확률을 부여하는 것은 단순한 일이다.
 세종 코퍼스로부터 unigram 확률을 추출하고, 아래와 같은 형식으로 unigram FST를 만든다. 
-즉, 글자 심벌에서는 0을 부여하고 품사 심벌이 나오는 곳에 \\( -log p(w\_{i},t\_{i}) \\)를 
-부여한다.
+즉, 글자 심벌에서는 0을 부여하고 품사 심벌이 나오는 곳에 <em> -log P(w<sub>i</sub>, t<sub>i</sub>) </em>를 부여한다.
 
 ![unigram 확률이 부착된 단어 FST](public/images/wfst.jpg) 
 
