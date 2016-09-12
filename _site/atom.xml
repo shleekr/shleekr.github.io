@@ -4,7 +4,7 @@
  <title>Rouzeta</title>
  <link href="https://shleekr.github.io/atom.xml" rel="self"/>
  <link href="https://shleekr.github.io/"/>
- <updated>2016-09-11T16:44:22+09:00</updated>
+ <updated>2016-09-12T23:58:57+09:00</updated>
  <id>https://shleekr.github.io</id>
  <author>
    <name>Sangho Lee</name>
@@ -280,8 +280,10 @@ define ARules NPFilter    .o. ! 체언 + 조사 규칙 적용 : 사과는/사람
 &lt;p&gt;유한 상태 형태소 분석기 (Rouzeta)는 &lt;a href=&quot;http://ithub.korean.go.kr/user/guide/corpus/guide1.do&quot;&gt;세종 코퍼스&lt;/a&gt;를
 처리하여 만들었다. 한편, 세종 코퍼스에서 사용하고 있는 품사가 덜 세분되어있는 경향이 있어서,
 본 연구에서는 본인이 계속 사용해 오던 품사 셋으로 코퍼스를 수정하였다.
-태깅되어 있는 코퍼스를 변환하는 것이 쉽지 않았는데, 특히나 세종 코퍼스에 오류가 너무 많았으며,
+태깅되어 있는 코퍼스를 변환하는 것이 쉽지 않았는데, 특히나 세종 코퍼스에 오류가 많았으며,
 이를 패턴별로 프로그램을 작성하여 자동으로 수정도 하였고, 오류가 몇 개 되지 않았을 때에는 직접 수정하였다. 
+(제가 사용한 세종 코퍼스는 &lt;a href=&quot;https://air.changwon.ac.kr/member/&quot;&gt;차정원 교수님&lt;/a&gt; 연구실에서 오류를
+고친 코퍼스를 가지고 수정하였는데, 그래도 여전히 오타, 품사 오류 등이 보였습니다.)
 수정된 코퍼스를 오픈할 수 있는지, 현 시점에서 최초 세종 코퍼스의 라이센스를 검색해 보았으나 찾을 수 없어서
 현 시점에서는 수정된 코퍼스를 올리지 않겠다.&lt;/p&gt;
 
@@ -1137,6 +1139,10 @@ Rouzeta 형태소 분석기를 사용하는데 (덧붙여 혹시라도 품사 �
 이 형태소 분석기를 수정할 기회도 많지 않을 것 같습니다. 
 그러므로 분석기를 더 수정해달라거나 하는 요구 사항은 받지 않겠습니다.)&lt;/p&gt;
 
+&lt;p&gt;&lt;em&gt;
+이 블로그를 올린 다음 날, 신명철님께서 &lt;a href=&quot;https://github.com/dsindex/rouzeta&quot;&gt;Rouzeta 컴파일&lt;/a&gt; 글을 올리셨습니다. 참고바랍니다.
+&lt;/em&gt;&lt;/p&gt;
+
 &lt;h3&gt;참고문헌&lt;/h3&gt;
 
 &lt;p&gt;&lt;a name=&#39;1&#39;&gt; [1] 이상호, 서정연, 오영환, &lt;a href=&quot;http://society.kisti.re.kr/sv/SV_svpsbs03VR.do?method=detail&amp;amp;menuid=1&amp;amp;subid=11&amp;amp;cn2=GOHHAK_1995_y1995m06a_195&quot;&gt;&amp;quot;KTS: 미등록어를 고려한 한국어 품사 태깅 시스템&amp;quot;&lt;/a&gt;, 제 12회 음성통신 및 신호처리 워크샵 논문집, pp 195-199, 1995. &lt;/a&gt;&lt;/p&gt;
@@ -1148,6 +1154,8 @@ Rouzeta 형태소 분석기를 사용하는데 (덧붙여 혹시라도 품사 �
 &lt;p&gt;&lt;a name=&#39;4&#39;&gt; [4] 양승현, 김영섬, &lt;a href=&quot;http://www.dbpia.co.kr/Journal/ArticleDetail/NODE00607713&quot;&gt;&amp;quot;부분 어절의 기분석에 기반한 고속 한국어 형태소 분석 방법&amp;quot;&lt;/a&gt;, 정보과학회 논문지 : 소프트웨어 및 응용, 27권, 3호, pp 290-301, 2000. &lt;/a&gt;&lt;/p&gt;
 
 &lt;p&gt;&lt;a name=&#39;5&#39;&gt; [5] Ronald M. Kaplan, Martin Kay, &lt;a href=&quot;http://www.aclweb.org/anthology/J94-3001.pdf&quot;&gt;Regular Models of Phonological Rule Systems&lt;/a&gt;, Computational Linguistics 1994. &lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a name=&#39;6&#39;&gt; [6] 홍진표, 차정원, &lt;a href=&quot;http://air.changwon.ac.kr/wp-content/uploads/2012/01/errorSejong_201304.pdf&quot;&gt;&amp;quot;품사 태거와 빈도 정보를 활용한 세종 형태 분석 말뭉치 오류 수정&amp;quot;&lt;/a&gt;, 한국정보과학회 논문지, vol 40, no 7, 2013. &lt;/a&gt;&lt;/p&gt;
 </content>
  </entry>
  

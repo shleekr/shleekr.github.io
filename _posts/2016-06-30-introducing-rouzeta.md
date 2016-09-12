@@ -264,8 +264,10 @@ define ARules NPFilter    .o. ! 체언 + 조사 규칙 적용 : 사과는/사람
 유한 상태 형태소 분석기 (Rouzeta)는 [세종 코퍼스](http://ithub.korean.go.kr/user/guide/corpus/guide1.do)를
 처리하여 만들었다. 한편, 세종 코퍼스에서 사용하고 있는 품사가 덜 세분되어있는 경향이 있어서,
 본 연구에서는 본인이 계속 사용해 오던 품사 셋으로 코퍼스를 수정하였다.
-태깅되어 있는 코퍼스를 변환하는 것이 쉽지 않았는데, 특히나 세종 코퍼스에 오류가 너무 많았으며,
+태깅되어 있는 코퍼스를 변환하는 것이 쉽지 않았는데, 특히나 세종 코퍼스에 오류가 많았으며,
 이를 패턴별로 프로그램을 작성하여 자동으로 수정도 하였고, 오류가 몇 개 되지 않았을 때에는 직접 수정하였다. 
+(제가 사용한 세종 코퍼스는 [차정원 교수님](https://air.changwon.ac.kr/member/) 연구실에서 오류를
+고친 코퍼스를 가지고 수정하였는데, 그래도 여전히 오타, 품사 오류 등이 보였습니다.)
 수정된 코퍼스를 오픈할 수 있는지, 현 시점에서 최초 세종 코퍼스의 라이센스를 검색해 보았으나 찾을 수 없어서
 현 시점에서는 수정된 코퍼스를 올리지 않겠다.
 
@@ -1123,6 +1125,10 @@ Rouzeta 형태소 분석기를 사용하는데 (덧붙여 혹시라도 품사 �
 이 형태소 분석기를 수정할 기회도 많지 않을 것 같습니다. 
 그러므로 분석기를 더 수정해달라거나 하는 요구 사항은 받지 않겠습니다.)
 
+<em>
+이 블로그를 올린 다음 날, 신명철님께서 [Rouzeta 컴파일](https://github.com/dsindex/rouzeta) 글을 올리셨습니다. 참고바랍니다.
+</em>
+
 ### 참고문헌
 
 <a name='1'> [1] 이상호, 서정연, 오영환, ["KTS: 미등록어를 고려한 한국어 품사 태깅 시스템"](http://society.kisti.re.kr/sv/SV_svpsbs03VR.do?method=detail&menuid=1&subid=11&cn2=GOHHAK_1995_y1995m06a_195), 제 12회 음성통신 및 신호처리 워크샵 논문집, pp 195-199, 1995. </a>
@@ -1135,4 +1141,5 @@ Rouzeta 형태소 분석기를 사용하는데 (덧붙여 혹시라도 품사 �
 
 <a name='5'> [5] Ronald M. Kaplan, Martin Kay, [Regular Models of Phonological Rule Systems](http://www.aclweb.org/anthology/J94-3001.pdf), Computational Linguistics 1994. </a>
 
+<a name='6'> [6] 홍진표, 차정원, ["품사 태거와 빈도 정보를 활용한 세종 형태 분석 말뭉치 오류 수정"](http://air.changwon.ac.kr/wp-content/uploads/2012/01/errorSejong_201304.pdf), 한국정보과학회 논문지, vol 40, no 7, 2013. </a>
 
