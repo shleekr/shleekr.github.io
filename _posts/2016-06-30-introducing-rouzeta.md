@@ -2,8 +2,9 @@
 layout: post
 title: 유한 상태 기반의 한국어 형태소 분석기
 ---
+
 <center>
-<p> 이 상호 <p>
+![이상호](public/images/emailaddress.jpg) 
 </center>
 
 <div class="message">

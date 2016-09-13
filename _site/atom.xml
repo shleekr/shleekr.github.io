@@ -4,7 +4,7 @@
  <title>Rouzeta</title>
  <link href="https://shleekr.github.io/atom.xml" rel="self"/>
  <link href="https://shleekr.github.io/"/>
- <updated>2016-09-13T19:56:57+09:00</updated>
+ <updated>2016-09-14T01:31:51+09:00</updated>
  <id>https://shleekr.github.io</id>
  <author>
    <name>Sangho Lee</name>
@@ -18,7 +18,7 @@
    <updated>2016-06-30T00:00:00+09:00</updated>
    <id>https://shleekr.github.io/2016/06/30/introducing-rouzeta</id>
    <content type="html">&lt;p&gt;&lt;center&gt;
-&lt;p&gt; 이 상호 &lt;p&gt;
+&lt;img src=&quot;public/images/emailaddress.jpg&quot; alt=&quot;이상호&quot;&gt; 
 &lt;/center&gt;&lt;/p&gt;
 
 &lt;div class=&quot;message&quot;&gt;
