@@ -1126,7 +1126,9 @@ Rouzeta 형태소 분석기를 사용하는데 (덧붙여 혹시라도 품사 �
 그러므로 분석기를 더 수정해달라거나 하는 요구 사항은 받지 않겠습니다.)
 
 <em>
+<font color="blue">
 이 블로그를 올린 다음 날, 신명철님께서 [Rouzeta 컴파일](https://github.com/dsindex/rouzeta) 글을 올리셨습니다. 참고바랍니다.
+</font>
 </em>
 
 ### 참고문헌
