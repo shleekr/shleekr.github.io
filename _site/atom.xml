@@ -4,7 +4,7 @@
  <title>Rouzeta</title>
  <link href="https://shleekr.github.io/atom.xml" rel="self"/>
  <link href="https://shleekr.github.io/"/>
- <updated>2016-09-13T16:56:11+09:00</updated>
+ <updated>2016-09-13T19:56:57+09:00</updated>
  <id>https://shleekr.github.io</id>
  <author>
    <name>Sangho Lee</name>
@@ -17,7 +17,11 @@
    <link href="https://shleekr.github.io/2016/06/30/introducing-rouzeta/"/>
    <updated>2016-06-30T00:00:00+09:00</updated>
    <id>https://shleekr.github.io/2016/06/30/introducing-rouzeta</id>
-   <content type="html">&lt;div class=&quot;message&quot;&gt;
+   <content type="html">&lt;p&gt;&lt;center&gt;
+&lt;p&gt; 이 상호 &lt;p&gt;
+&lt;/center&gt;&lt;/p&gt;
+
+&lt;div class=&quot;message&quot;&gt;
 &lt;bold&gt; &lt;font color=&quot;black&quot;&gt; Abstract &lt;/font&gt; &lt;/bold&gt; This study aims to make a finite 
 state-based Korean morphological analyzer &lt;em&gt;Rouzeta&lt;/em&gt;.
 I implemented the analyzer by using the open source finite state compiler &lt;em&gt;foma&lt;/em&gt; toolkit,

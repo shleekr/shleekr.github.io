@@ -2,6 +2,9 @@
 layout: post
 title: 유한 상태 기반의 한국어 형태소 분석기
 ---
+<center>
+<p> 이 상호 <p>
+</center>
 
 <div class="message">
 <bold> <font color="black"> Abstract </font> </bold> This study aims to make a finite 
