@@ -1,0 +1,36 @@
+digraph agraph
+{
+   rankdir="TB";
+   ratio="compress";
+   node [shape="circle", label=""];
+
+   0 -> 1 [label="ρ:ρ/0"];
+   1 -> 1 [label="ρ:ρ/0"];
+   1 -> 2 [label="nc:nc/ -log p(nc|INI)"];
+   2 -> 3 [label="ρ:ρ/0"];
+   3 -> 3 [label="ρ:ρ/0"];
+   3 -> 4 [label="np:np/ -log p(np|nc)"];
+   3 -> 5 [label="pt:pt/ -log p(pt|nc)"];
+   3 -> 2 [label="nc:nc/ -log p(nc|nc)"];
+
+   1 -> 4 [label="np:np/ -log p(np|INI)"];
+   1 -> 5 [label="pt:pt/ -log p(pt|INI)"];
+
+   4 -> 6 [label="ρ:ρ/0"];
+   6 -> 6 [label="ρ:ρ/0"];
+   6 -> 2 [label="nc:nc/ -log p(nc|np)"];
+   6 -> 4 [label="np:np/ -log p(np|np)"];
+   6 -> 5 [label="pt:pt/ -log p(pt|np)"];
+
+   5 -> 7 [label="ρ:ρ/0"];
+   7 -> 7 [label="ρ:ρ/0"];
+   7 -> 2 [label="nc:nc/ -log p(nc|pt)"];
+   7 -> 4 [label="np:np/ -log p(np|pt)"];
+   7 -> 5 [label="pt:pt/ -log p(pt|pt)"];
+
+   0 [shape="doublecircle", label="INI"] ;
+   2 [shape="doublecircle", label="nc"] ;
+   4 [shape="doublecircle", label="np"] ;
+   5 [shape="doublecircle", label="pt"] ;
+}
+
