@@ -102,7 +102,7 @@ I implemented the analyzer by using the open source finite state compiler <em>fo
 and built the weighted finite state-based Korean part-of-speech tagger by composing
 <em>Rouzeta FST</em> and <em>unigram WFST (weighted FST)</em>.
 The Korean morpheme alteration rules were written from scratch and
-the entries in the <em>Rouzeta</em> dictionary were extracted from <em>Sejong Corpus</em>.
+the entries in <em>Rouzeta</em> dictionary were extracted from <em>Sejong Corpus</em>.
 <em>Rouzeta</em> is an open source program and I hope this analyzer could help
 researchers study finite state-based Korean morphology.
 </div>
@@ -664,7 +664,7 @@ define ARules NPFilter    .o. ! 체언 + 조사 규칙 적용 : 사과는/사람
 
     <tr>
      <td>쉼표</td>
-     <td>xn</td>
+     <td>sc</td>
      <td>comma</td>
      <td>:, ,, ... </td>
     </tr>
@@ -745,12 +745,16 @@ Rouzeta는 두개의 폴더로 되어 있으며, Rouzeta 폴더에서는 형태�
 
 <p>통상 확률 태깅 방법이라고 말하면 아래의 bigram 수식을 의미하는데,</p>
 
-<p><img src="http://www.sciweavers.org/tex2img.php?eq=t%5E%7B%2A%7D_%7B1..n%7D%20%3D%20arg%20max_%7Bt_%7B1..n%7D%7D%20%5Cprod%20P%28w_%7Bi%7D%7Ct_%7Bi%7D%29P%28t_%7Bi%7D%7Ct_%7Bi-1%7D%29&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0" align="center" border="0" alt="t^{*}_{1..n} = arg max_{t_{1..n}} \prod P(w_{i}|t_{i})P(t_{i}|t_{i-1})" width="311" height="28" /></p>
+<p><center>
+<img src="public/images/bigram_eq.jpg" alt="bigram 품사 태거"> 
+</center></p>
 
 <p>본 사이트에서는 단순히 형태소열이 발생할 확률이 최대인 열을 찾는 모델을 공개한다.
 이 이유는 특별한 의미가 있다기보다 모델 사이즈가 작기 때문이다.</p>
 
-<p><img src="http://www.sciweavers.org/tex2img.php?eq=t%5E%7B%2A%7D_%7B1..n%7D%20%3D%20arg%20max_%7Bt_%7B1..n%7D%7D%20%5Cprod%20P%28w_%7Bi%7D%2Ct_%7Bi%7D%29&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0" align="center" border="0" alt="t^{*}_{1..n} = arg max_{t_{1..n}} \prod P(w_{i},t_{i})" width="244" height="28" /></p>
+<p><center>
+<img src="public/images/unigram_eq.jpg" alt="unigram 품사 태거"> 
+</center></p>
 
 <p>FST를 만든 상태에서 가중치를 추가하는 것은 실제 FST 자체를 변경시키지 않는데,
 bigram FST를 위해 품사의 천이 값을 모든 FST에 추가하게 되면 FST의 상태 수가 
