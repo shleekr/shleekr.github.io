@@ -4,13 +4,180 @@
  <title>Rouzeta</title>
  <link href="https://shleekr.github.io/atom.xml" rel="self"/>
  <link href="https://shleekr.github.io/"/>
- <updated>2016-10-04T23:11:17+09:00</updated>
+ <updated>2016-10-23T22:58:00+09:00</updated>
  <id>https://shleekr.github.io</id>
  <author>
    <name>Sangho Lee</name>
    <email></email>
  </author>
 
+ 
+ <entry>
+   <title>유니그램 한국어 형태소 분석기를 만들기 위한 자료들</title>
+   <link href="https://shleekr.github.io/2016/10/23/build-fst/"/>
+   <updated>2016-10-23T00:00:00+09:00</updated>
+   <id>https://shleekr.github.io/2016/10/23/build-fst</id>
+   <content type="html">&lt;p&gt;제가 세종 코퍼스를 몇 주에 걸쳐서 수정하였는데요, 그 자료를 공개할 수 있는지에
+대해서 국립국어원에 문의하였으며, 그 결과 제 블로그에는 올릴 수 없지만,
+국립국어원 자료실에 올릴 수 있었습니다. 
+그 위치를 말씀드려서 향후 한국어 처리 발전에 조금이라도 도움이 되었으면 합니다.&lt;/p&gt;
+
+&lt;p&gt;그리고, 그 수정된 자료로부터 unigram 품사 태거를 만들었던 프로그램을 공유하고자 합니다.
+이 블로그에서 설명하는대로 따라가시면 유니그램 유한 상태 한국어 형태소 분석기를 구축할 수 있습니다.&lt;/p&gt;
+
+&lt;h3&gt;수정된 세종 코퍼스&lt;/h3&gt;
+
+&lt;p&gt;수정된 세종 코퍼스는 &lt;a href=&quot;https://ithub.korean.go.kr/user/member/memberPdsReferenceManager.do&quot;&gt;국립국어원 언어정보나눔터 기타참고자료&lt;/a&gt;에 올려져 있습니다.
+이 페이지에 접속해 보시면, 제가 수정한 자료밖에 올라와 있지 않습니다.
+분류는 &amp;#39;말뭉치&amp;#39;, 제목이 &amp;#39;전산 처리용 (수정) 세종 말뭉치 1/3&amp;#39; 이렇게 되어 있습니다.
+총 3개의 제목으로 되어 있고 &amp;#39;1/3&amp;#39; &amp;#39;2/3&amp;#39; &amp;#39;3/3&amp;#39; 세 개의 파일을 모두 받은 후 압축을 풀어야 합니다.
+윈도우 환경에서 받아 풀어보니깐 제대로 풀리는 것을 확인하였습니다. 
+그리고 위 파일을 받기 위해서는 국립국어원에 회원가입을 하셔야 합니다.&lt;/p&gt;
+
+&lt;p&gt;압축을 풀면, 아래와 같이 sejong.txt와 sejong.pos 두 개의 파일이 보입니다.
+&lt;pre&gt;
+shlee@shlee-MacBookPro:~/Corpus$ &lt;em&gt;&lt;font color=&quot;red&quot;&gt;head -2 sejong.txt&lt;/font&gt;&lt;/em&gt;
+향약 421년째 계회
+임진왜란(1592년)이전 선조 초기에 설립되어 420여 년을 이어온 향약이 있어 화제다.
+shlee@shlee-MacBookPro:~/Corpus$ &lt;em&gt;&lt;font color=&quot;red&quot;&gt;head -2 sejong.pos&lt;/font&gt;&lt;/em&gt;
+향약/nc 421/nb+년/nu+째/xn 계회/nc
+임진왜란/nr+(/sl+1592/nb+년/nu+)/sr+이전/nc 선조/nr 초기/nc+에/pa 설립/na+되/xv+어/ec 420/nb+여/xn 년/nd+을/po 잇/vb+어/ex+오/vx+ㄴ/ed 향약/nc+이/ps 있/vj+어/ec 화제/nc+이/pp+다/ef+./sf
+&lt;/pre&gt;&lt;/p&gt;
+
+&lt;p&gt;sejong.txt는 한 라인에 한 문장씩 쓰여져 있는 파일이고, sejong.pos는 한 라인에 해당 문장의 형태소 분석이 적혀 있습니다. 
+sejong.pos에 있는 품사 정보는 이 사이트의 첫 번째 블로그에 정리되어 있으니 참고하기 바랍니다.&lt;/p&gt;
+
+&lt;h3&gt;유니그램 한국어 형태소 분석기&lt;/h3&gt;
+
+&lt;p&gt;이 섹션에서는, 위 sejong.pos로부터 어떻게 유한 상태 형태소 분석기 구축 파일 중 하나인 korean.lexc를 만드는 방법과
+최종적으로 unigram 품사 태거를 만드는 방법을 설명한다.
+unigram 품사 태거는 아래의 수식으로 만들어지는 것이며, 
+가중 유한 상태 변환기 (weighted finite state transducer) 입장에서는
+단순히 형태소 엔트리 바로 다음에 오는 품사 엣지에
+unigram 확률값 &lt;em&gt; P(w&lt;sub&gt;i&lt;/sub&gt;, t&lt;sub&gt;i&lt;/sub&gt;) &lt;/em&gt;이 부착된 것으로 이해하면 된다.&lt;/p&gt;
+
+&lt;p&gt;&lt;center&gt;
+&lt;img src=&quot;public/images/unigram_eq.jpg&quot; alt=&quot;unigram 품사 태거&quot;&gt; 
+&lt;/center&gt;&lt;/p&gt;
+
+&lt;p&gt;우선, &lt;a href=&quot;public/data/buildfst.tar.gz&quot;&gt;buildfst.tar.gz&lt;/a&gt;을 내려받아서 압축을 풀어보면 아래와 같은 파일들이 있다.
+&lt;pre&gt;
+shlee@shlee-MacBookPro:~/FST/KFST.1.0/buildfst$ &lt;em&gt;&lt;font color=&quot;red&quot;&gt;ls -l&lt;/font&gt;&lt;/em&gt;
+합계 61012
+-rw-r--r-- 1 shlee shlee  4333038 10월 23 20:33 expand.dict
+-rw-r--r-- 1 shlee shlee 58095270 10월 23 20:34 korinvert.fomaatt
+-rwxr-xr-x 1 shlee shlee    24743 10월 23 20:33 makelexc.py
+-rwxr-xr-x 1 shlee shlee    11349 10월 23 20:33 makeuniprobs.py
+-rwxr-xr-x 1 shlee shlee      775 10월 23 20:33 trans.sh
+&lt;/pre&gt;&lt;/p&gt;
+
+&lt;p&gt;위 리스트에서 korinvert.fomaatt는, 이 사이트 첫 번째 블로그에서 설명되고 있는 
+유한 상태 형태소 분석기이다.&lt;br&gt;
+&lt;a href=&quot;http://foma.googlecode.com&quot;&gt;foma&lt;/a&gt;를 이용하여 유한 상태 형태소 분석기를 만든 후,
+foma 명령어 &amp;quot;invert net&amp;quot;으로 입출력 심벌을 바꾼 후, &amp;quot;write att &amp;gt; korinvert.fomaatt&amp;quot;를 
+이용해서 AT&amp;amp;T 포맷으로 파일을 썼을 때 출력되는 파일이다.
+(첫번째 블로그를 따라서 만들어보면 얻어질 수 있는 파일인데 
+ &lt;a href=&quot;http://foma.googlecode.com&quot;&gt;foma&lt;/a&gt;에 익숙하지 않은 분들을 위해서 포함시켰습니다.)&lt;/p&gt;
+
+&lt;p&gt;실행 파일은 세 개가 준비되어 있다. 우선 sejong.pos로부터 korean.lexc 파일을 만드는 방법은 아래와 같다.&lt;/p&gt;
+
+&lt;pre&gt;
+shlee@shlee-MacBookPro:~/FST/KFST.1.0/buildfst$ &lt;em&gt;&lt;font color=&quot;red&quot;&gt;./makelexc.py -i sejong.pos -d expand.dict -l korean.lexc -c 10 -o final.dict&lt;/font&gt;&lt;/em&gt;
+.......................................................................................cutoff 10 : ac+pa 3
+cutoff 10 : ac+vb 4
+cutoff 10 : ac+sd 6
+cutoff 10 : ac+nr 2
+cutoff 10 : ac+pa 3
+...
+...
+cutoff 10 : xn+ad 4
+cutoff 10 : xn+na 1
+cutoff 10 : xn+du 1
+cutoff 10 : xn+nb 3
+cutoff 10 : xn+np 1
+&lt;/pre&gt;
+
+&lt;p&gt;위 실행에서 사용된 expand.dict는 sejong.pos로부터 단어들을 추출한 후 그 엔트리들을 추가/삭제한 단순한 사전 파일이다.
+makelexc.py를 실행하면 최종적으로 korean.lexc와 final.dict를 얻게 되는데,
+sejong.pos에서 발생되는 품사 천이 빈도에서 10회 이하인 경우는 두 품사를 서로 붙지 않게 만들었다.
+그 빈도의 임계치는 &amp;quot;-c&amp;quot; 옵션 뒤에 오는 숫자이다.
+그리고 sejong.pos에서 발견되는 오타들 (예를 들어 &amp;quot;시꺼믛/vj&amp;quot;)을 제거한 단어들이 final.dict에 들어가게 된다.&lt;/p&gt;
+
+&lt;p&gt;그 다음 makeuniprobs.py를 실행한다.&lt;/p&gt;
+
+&lt;pre&gt;
+shlee@shlee-MacBookPro:~/FST/KFST.1.0/buildfst$ &lt;em&gt;&lt;font color=&quot;red&quot;&gt;./makeuniprobs.py -i sejong.pos -d final.dict -w worduniprob&lt;/font&gt;&lt;/em&gt;
+.......................................................................................# of used symbols : 1335636
+# of Unique Symbols : 7214
+&lt;/pre&gt;
+
+&lt;p&gt;위 문장을 실행하면 worduniprob.att와 worduniprob.sym 두 개의 파일이 만들어진다.&lt;/p&gt;
+
+&lt;pre&gt;
+shlee@shlee-MacBookPro:~/FST/KFST.1.0/buildfst$ &lt;em&gt;&lt;font color=&quot;red&quot;&gt;head worduniprob.att&lt;/font&gt;&lt;/em&gt;
+0   1   균 균 0.000000
+1   2   전 전 0.000000
+2   0   /nc /nc 15.307562
+0   3   환 환 0.000000
+3   4   경 경 0.000000
+4   5   경 경 0.000000
+5   6   제 제 0.000000
+6   0   /nc /nc 16.916999
+0   7   임 임 0.000000
+7   8   의 의 0.000000
+shlee@shlee-MacBookPro:~/FST/KFST.1.0/buildfst$ &lt;em&gt;&lt;font color=&quot;red&quot;&gt;head worduniprob.sym&lt;/font&gt;&lt;/em&gt;
+&lt; epsilon &gt;   0
+憁 1
+耀 2
+涉 3
+る 4
+伊 5
+唎 6
+禑 7
+預 8
+洞 9
+&lt;/pre&gt;
+
+&lt;p&gt;위 파일에서 worduniprob.att를 보면, &amp;quot;균전/nc&amp;quot;, &amp;quot;환경경제/nc&amp;quot;가 모두 0번 상태에서 0번 상태로 
+천이 되는 것을 볼 수 있다. 그리고 한글일 경우에는 확률값이 0.0인데 반해서
+품사의 경우에는 유니그램 확률값 (정확히는 유니그램 확률의 마이너스 로그값)이 적혀있다.
+즉 마이너스 로그 unigram 확률값 &lt;em&gt; -log P(w&lt;sub&gt;i&lt;/sub&gt;, t&lt;sub&gt;i&lt;/sub&gt;) &lt;/em&gt;을
+한글 심벌에 적지 않고 형태소 뒤에 오는 품사에 적어 놓은 것이다.&lt;/p&gt;
+
+&lt;p&gt;위 두 개의 파일이 만들어진 것을 확인한 후에 아래의 trans.sh을 실행시키면 된다.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;
+shlee@shlee-MacBookPro:~/FST/KFST.1.0/buildfst$ &lt;em&gt;&lt;font color=&quot;red&quot;&gt;cat trans.sh&lt;/font&gt;&lt;/em&gt;
+#!/bin/bash
+sed -e &#39;s/ /&lt; space &gt;/g&#39; -e &#39;s/@0@/&lt; epsilon &gt;/g&#39; korinvert.fomaatt &gt; korinvert.att
+
+(export LANG=C; awk -F&#39;\t&#39; &#39; { if (NF == 4) { print $3 ; print $4 ; } } &#39; korinvert.att | sort | uniq | awk &#39; BEGIN { printf(&quot;&lt; epsilon &gt;    0\n&quot;) ; cnt = 1 ; } { if ($1 != &quot;&lt; epsilon &gt;&quot;) { printf(&quot;%s       %d\n&quot;,$1,cnt) ; cnt++ ; } } &#39; &gt; korinvert.sym ;)
+
+fstcompile --isymbols=korinvert.sym --osymbols=worduniprob.sym korinvert.att &gt; korinvertuni.att
+fstcompile --isymbols=worduniprob.sym --osymbols=worduniprob.sym worduniprob.att &gt; worduniprob.cmp
+fstdeterminize worduniprob.cmp worduniprob.det
+fstminimize worduniprob.det worduniprob.min
+fstarcsort worduniprob.min worduniprob.srt
+mv korinvertuni.att korinvertuni.fst
+fstcompose korinvertuni.fst worduniprob.srt &gt; korfinaluni.fst
+shlee@shlee-MacBookPro:~/FST/KFST.1.0/buildfst$ &lt;em&gt;&lt;font color=&quot;red&quot;&gt;trans.sh&lt;/font&gt;&lt;/em&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;위 trans.sh을 살펴보면, 우선 korinvert.fomaatt는 &lt;a href=&quot;http://foma.googlecode.com&quot;&gt;foma&lt;/a&gt;에서 AT&amp;amp;T 포맷으로
+출력된 파일인데 이 파일에서 사용되는 심벌과 &lt;a href=&quot;http://www.openfst.org&quot;&gt;openfst&lt;/a&gt;의 심벌 중
+스페이스와 엡실론 심벌이 서로 다르기때문에 두 심벌만 openfst 심벌로 바꾸어 준다.
+이후 korinvert.att에서 존재하는 심벌들을 모두 모은 후 유니크한 심벌들을 구해서 korinvert.sym을 만든다.
+이후에는 &lt;a href=&quot;http://www.openfst.org&quot;&gt;openfst&lt;/a&gt;에 있는 유틸리티들을 이용해서 최종적으로 korfinaluni.fst를 만들게 된다.&lt;/p&gt;
+
+&lt;p&gt;맨 마지막 줄에 있는 &amp;quot;fstcompose korinvertuni.fst worduniprob.srt &amp;gt; korfinaluni.fst&amp;quot;가
+유한 상태 형태소 분석기 &amp;quot;korinvertunit.fst&amp;quot;와 unigram 확률 FST인 &amp;quot;worduniprob.srt&amp;quot;를
+compose operator를 이용해서 최종적으로 유니그램 한국어 형태소 분석기를 만드는 명령어이다.&lt;/p&gt;
+
+&lt;p&gt;지금까지 세 번의 블로그 작성을 통해서,
+약 두 달간 제가 공부하면서 만들었던 &amp;quot;유한 상태 기반의 한국어 형태소 분석기&amp;quot;의
+제작 과정을 어느 정도 설명한 것 같습니다.&lt;/p&gt;
+</content>
+ </entry>
  
  <entry>
    <title>바이그램 한국어 품사 태거</title>
